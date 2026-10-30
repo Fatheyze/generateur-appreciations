@@ -1133,7 +1133,7 @@ function renderRecap(){
   const me = moyEvals(c);
   c.eleves.forEach(e => { if (!e.texte && !e.verrou) e.texte = generer(e, c, me); });
   el.innerHTML = `<div class="actions" style="margin:0 0 10px"><h3 style="margin:0;flex:1">Toutes les appréciations de ${esc(c.nom)}</h3>
-    <button class="btn small" data-act="copy-all">📋 Tout copier (avec les noms)</button><button class="btn small" data-act="reset-copie">Décocher tout</button></div>
+    <button class="btn small jaune" data-act="copy-col" title="Une appréciation par ligne, dans l'ordre alphabétique de Pronote">📋 Copier la colonne pour Pronote</button><button class="btn small" data-act="copy-all">📋 Tout copier (avec les noms)</button><button class="btn small" data-act="reset-copie">Décocher tout</button></div>
     <p class="muted" style="margin-top:0">Relisez d'un coup d'œil, copiez chaque appréciation et collez-la dans Pronote. La case se coche toute seule pour suivre où vous en êtes.</p>
     ${c.eleves.map(e => `<div class="recap-row"><div><b>${esc(e.nom)}</b> ${esc(e.prenom)}<br><span class="moy ${couleur(e.moy)}">${fmt(e.moy)}</span></div>
       <div class="recap-txt ${e.texte ? "" : "vide"}">${e.texte ? esc(e.texte) : "Pas encore d'appréciation."}</div>
@@ -1287,6 +1287,14 @@ document.addEventListener("click", async ev => {
     case "copy-next": if (e) copierEleve(e, true); break;
     case "del-eleve": if (!e || !confirm(`Supprimer ${e.nom} ${e.prenom} ?`)) return; { const i = c.eleves.indexOf(e); c.eleves.splice(i, 1); selId = (c.eleves[i] || c.eleves[i - 1] || {}).id || null; majTous(c); renderListe(); renderEditeur(); } break;
     case "recap-copy": { const x = c.eleves.find(y => y.id === b.dataset.id); if (x && await copier(x.texte)){ x.copie = true; sauver(); renderRecap(); toast("Copié ✓"); } break; }
+    case "copy-col": {
+      // ordre alphabétique de Pronote ; une ligne par élève, sans retour à la ligne à l'intérieur d'une appréciation
+      const cle = x => (x.nom + " " + x.prenom).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const liste = [...c.eleves].sort((a, b) => cle(a).localeCompare(cle(b), "fr"));
+      if (await copier(liste.map(x => (x.texte || "").replace(/\s*\n\s*/g, " ").trim()).join("\r\n"))){
+        toast(`${liste.length} appréciations copiées : cliquez dans la case du premier élève dans Pronote, puis Ctrl+V`);
+        liste.forEach(x => x.copie = true); sauver(); renderRecap();
+      } break; }
     case "copy-all": if (await copier(c.eleves.map(x => `${x.nom} ${x.prenom} (${fmt(x.moy)}) : ${x.texte}`).join("\n\n"))) toast("Toutes les appréciations sont copiées"); break;
     case "reset-copie": c.eleves.forEach(x => x.copie = false); sauver(); renderRecap(); break;
     case "cl-opt": c.cl[b.dataset.k] = b.dataset.v; if (!c.cl.verrou) c.cl.texte = genererClasse(c); sauver(); renderClasse(); break;
