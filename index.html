@@ -188,6 +188,7 @@ details p,details li{line-height:1.5;font-size:14px}
       <select id="sel-classe" aria-label="Classe"></select>
       <button class="btn" data-act="new-class">＋ Classe</button>
       <button class="btn rose" data-act="import-open">⬆ Importer les notes</button>
+      <span id="h-sync" class="muted" style="font-size:12px;font-weight:700;cursor:pointer" data-act="tab" data-tab="reglages"></span>
     </div>
   </header>
 
@@ -496,7 +497,103 @@ normaliser();
 // nouveau moteur de rédaction : les appréciations non modifiées à la main sont réécrites
 if (S.moteur !== 2){ (S.classes || []).forEach(c => { c.eleves.forEach(e => { if (!e.verrou) e.texte = ""; }); if (c.cl && !c.cl.verrou) c.cl.texte = ""; }); S.moteur = 2; }
 let saveT;
-function sauver(){ clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch(e){ toast("⚠️ Sauvegarde impossible dans ce navigateur"); } }, 200); }
+// Repère les classes modifiées (horodatage « maj ») pour fusionner proprement entre appareils
+const snap = new Map();
+const sansMaj = (k, v) => k === "maj" ? undefined : v;
+function marquer(){
+  const now = Date.now();
+  S.classes.forEach(c => { const j = JSON.stringify(c, sansMaj); if (snap.has(c.id) && snap.get(c.id) !== j) c.maj = now; if (!c.maj) c.maj = 1; snap.set(c.id, j); });
+  const cj = JSON.stringify(S.cfg); if (snap.has("_cfg") && snap.get("_cfg") !== cj) S.cfgMaj = now; snap.set("_cfg", cj);
+}
+function ecrireLocal(){ try { localStorage.setItem(STORE, JSON.stringify(S)); } catch(e){ toast("⚠️ Sauvegarde impossible dans ce navigateur"); } }
+function sauver(){ clearTimeout(saveT); saveT = setTimeout(() => { marquer(); ecrireLocal(); planifierSync(); }, 200); }
+
+/* ================= Synchronisation entre appareils (dépôt privé donnees-outils) ================= */
+const CLE_NUAGE = "nuage-github-cle"; // clé partagée par tous les outils de fatheyze.github.io
+const CLE_SYNC = "appreciations-sync-v1";
+let sync = {owner:"Fatheyze", repo:"donnees-outils", path:"generateur-appreciations.json"};
+try { const o = JSON.parse(localStorage.getItem(CLE_SYNC) || "null"); if (o){ delete o.token; sync = {...sync, ...o}; } } catch(e){}
+function jeton(){
+  try {
+    const k = localStorage.getItem(CLE_NUAGE); if (k) return k;
+    // clé déjà saisie dans un autre outil (Roue des maths, Interro flash…) : on la reprend
+    for (const cle of ["roue-maths-github-config-v1", "ifc_gh_config_v1"]){
+      const o = JSON.parse(localStorage.getItem(cle) || "null");
+      if (o && o.token){ localStorage.setItem(CLE_NUAGE, o.token); return o.token; }
+    }
+  } catch(e){}
+  return "";
+}
+const syncActive = () => !!(sync.owner && sync.repo && sync.path && jeton());
+let syncMsg = "Synchronisation non configurée sur cet appareil.", syncOk = null, syncEnCours = false, syncRelance = false, syncTimer = null, depotPrive = false;
+function b64enc(str){ const o = new TextEncoder().encode(str); let s = ""; for (let i = 0; i < o.length; i += 0x8000) s += String.fromCharCode.apply(null, o.subarray(i, i + 0x8000)); return btoa(s); }
+function b64dec(b64){ const s = atob(b64.replace(/\s/g, "")); return new TextDecoder().decode(Uint8Array.from(s, c => c.charCodeAt(0))); }
+const urlDepot = () => `https://api.github.com/repos/${encodeURIComponent(sync.owner.trim())}/${encodeURIComponent(sync.repo.trim())}`;
+const urlFichier = () => `${urlDepot()}/contents/${sync.path.trim().split("/").map(encodeURIComponent).join("/")}`;
+const entetes = () => ({"Authorization": `Bearer ${jeton().trim()}`, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"});
+function etatSync(msg, ok){
+  syncMsg = msg; syncOk = ok;
+  const el = $("#sync-etat"); if (el){ el.textContent = msg; el.style.color = ok === false ? "var(--rouge)" : ok ? "var(--vert)" : ""; }
+  const hd = $("#h-sync"); if (hd){ hd.textContent = syncActive() ? (ok === false ? "☁ ⚠️ non synchronisé" : "☁ " + msg) : ""; hd.style.color = ok === false ? "var(--rouge)" : ""; hd.title = msg; }
+}
+function erreurGitHub(st){
+  if (st === 401) return "GitHub refuse la clé (expirée ou mal copiée).";
+  if (st === 403) return "cette clé n'a pas le droit d'écrire dans ce dépôt.";
+  if (st === 404) return "dépôt introuvable, ou la clé n'y a pas accès.";
+  return `erreur GitHub ${st}.`;
+}
+const empreinte = o => JSON.stringify([(o.classes || []).map(c => c.id + ":" + (c.maj || 0)).sort(), Object.keys(o.supprimes || {}).sort(), o.cfgMaj || 0]);
+function fusionner(d){
+  const sup = {...(d.supprimes || {}), ...(S.supprimes || {})};
+  const parId = new Map();
+  [...(d.classes || []), ...S.classes].forEach(c => { if (sup[c.id]) return; const x = parId.get(c.id); if (!x || (c.maj || 0) > (x.maj || 0)) parId.set(c.id, c); });
+  S.classes = [...parId.values()]; S.supprimes = sup;
+  if ((d.cfgMaj || 0) > (S.cfgMaj || 0)){ S.cfg = {...CFG_DEF, ...(d.cfg || {})}; S.cfgMaj = d.cfgMaj; }
+  normaliser();
+  if (!S.classes.some(c => c.id === S.cur)) S.cur = (S.classes[0] || {}).id || null;
+  snap.clear(); marquer();
+}
+function planifierSync(delai = 2500){ if (!syncActive()) return; clearTimeout(syncTimer); syncTimer = setTimeout(synchroniser, delai); }
+async function synchroniser(){
+  if (!syncActive()) return;
+  if (syncEnCours){ syncRelance = true; return; }
+  syncEnCours = true; etatSync("Synchronisation en cours…");
+  try {
+    if (!depotPrive){
+      const rd = await fetch(urlDepot(), {headers: entetes(), cache: "no-store"});
+      if (rd.status !== 200) throw new Error(erreurGitHub(rd.status));
+      if (!(await rd.json()).private) throw new Error("ce dépôt est public : envoi refusé pour protéger les données des élèves.");
+      depotPrive = true;
+    }
+    for (let essai = 0; essai < 3; essai++){
+      const r = await fetch(urlFichier() + "?t=" + Date.now(), {headers: entetes(), cache: "no-store"});
+      let sha = null, distant = null;
+      if (r.status === 200){ const j = await r.json(); sha = j.sha; distant = JSON.parse(b64dec(j.content)); }
+      else if (r.status !== 404) throw new Error(erreurGitHub(r.status));
+      marquer();
+      const avant = empreinte(S);
+      if (distant) fusionner(distant);
+      if (empreinte(S) !== avant){ ecrireLocal(); const ae = document.activeElement; if (!ae || !/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) renderAll(); }
+      const heure = new Date().toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit"});
+      if (distant && empreinte(distant) === empreinte(S)){ etatSync(`Synchronisé à ${heure}`, true); return; }
+      const donnees = {version:1, outil:"generateur-appreciations", maj:new Date().toISOString(), classes:S.classes, supprimes:S.supprimes || {}, cfg:S.cfg, cfgMaj:S.cfgMaj || 0};
+      const corps = {message: `Appréciations : mise à jour du ${new Date().toLocaleString("fr-FR")}`, content: b64enc(JSON.stringify(donnees))};
+      if (sha) corps.sha = sha;
+      const p = await fetch(urlFichier(), {method: "PUT", headers: {...entetes(), "Content-Type": "application/json"}, body: JSON.stringify(corps)});
+      if (p.status === 200 || p.status === 201){ etatSync(`Synchronisé à ${heure}`, true); return; }
+      if (p.status === 409 || p.status === 422) continue; // modifié entre-temps sur un autre appareil : on recommence
+      throw new Error(erreurGitHub(p.status));
+    }
+    throw new Error("un autre appareil enregistre en même temps, réessayez.");
+  } catch(e){
+    etatSync("Synchronisation impossible : " + (e instanceof TypeError ? "pas de connexion à GitHub." : e.message) + " Vos données restent enregistrées sur cet appareil.", false);
+  } finally {
+    syncEnCours = false;
+    if (syncRelance){ syncRelance = false; synchroniser(); }
+  }
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") planifierSync(300); });
+setInterval(() => { if (document.visibilityState === "visible") planifierSync(0); }, 120000);
 const classe = () => S.classes.find(c => c.id === S.cur);
 let selId = null, onglet = "eleves";
 
@@ -1105,7 +1202,8 @@ function tableEvals(evals, pref){
     <td><select data-${pref}="${k}" data-k="dom">${optionsDom(ev.dom)}</select></td><td><select data-${pref}="${k}" data-k="type">${optionsType(ev.type)}</select></td></tr>`).join("")}
   </tbody></table></div>`;
 }
-function renderReglages(){
+function renderReglages(){ renderReglages0(); etatSync(syncMsg, syncOk); }
+function renderReglages0(){
   const c = classe(), cfg = S.cfg;
   $("#reglages").innerHTML = `<div class="stack">
   ${c ? `<div><h3>Évaluations de ${esc(c.nom)}</h3>
@@ -1124,6 +1222,17 @@ function renderReglages(){
     <label>Prénom de l'élève<select data-cfg="prenom">${[["debut","Au début (« Léa réalise un bon trimestre. »)"],["fin","Dans la conclusion (« Continue ainsi, Léa ! »)"],["deux","Au début et dans la conclusion"],["non","Jamais"]].map(([v, l]) => `<option value="${v}" ${cfg.prenom === v ? "selected" : ""}>${l}</option>`).join("")}</select><small>Seul le premier prénom est repris (« Yannis Samuel » → « Yannis »).</small></label>
     <label>Conclusion<select data-cfg="concl"><option value="tu" ${cfg.concl === "tu" ? "selected" : ""}>S'adresse à l'élève (« Continue ainsi ! »)</option><option value="neutre" ${cfg.concl === "neutre" ? "selected" : ""}>Neutre (« Il faut poursuivre ainsi. »)</option></select></label>
   </div><p class="muted">Les appréciations modifiées à la main (🔒) ne sont jamais écrasées par un changement de réglage.</p></div>
+  <div><h3>☁ Synchronisation entre vos appareils</h3>
+    <p class="muted" style="margin-top:0">Vos classes et appréciations sont enregistrées dans votre dépôt privé « donnees-outils », comme vos autres outils : tous vos appareils se mettent à jour tout seuls. Si vous avez déjà connecté un autre de vos outils sur ce navigateur, la clé est reprise automatiquement. Elle n'est jamais écrite dans la page publique.</p>
+    <div class="form">
+      <label>Compte GitHub<input id="s-owner" value="${esc(sync.owner)}"></label>
+      <label>Dépôt privé<input id="s-repo" value="${esc(sync.repo)}"></label>
+      <label>Fichier<input id="s-path" value="${esc(sync.path)}"></label>
+      <label>Clé GitHub (jeton personnel)<input id="s-token" type="password" autocomplete="off" placeholder="${jeton() ? "Clé déjà enregistrée sur ce navigateur (laisser vide pour la garder)" : "github_pat_…"}"></label>
+    </div>
+    <div class="actions"><button class="btn jaune" data-act="sync-ok">Enregistrer et synchroniser</button><button class="btn" data-act="sync-now">Synchroniser maintenant</button><span class="sp"></span><button class="btn danger" data-act="sync-off">Effacer la clé de ce navigateur</button></div>
+    <p id="sync-etat" style="font-weight:700"></p>
+  </div>
   <div><h3>Sauvegarde</h3>
     <p class="muted" style="margin-top:0">Les données restent dans ce navigateur. Faites une sauvegarde de temps en temps, ou pour passer d'un ordinateur à l'autre.</p>
     <div class="actions"><button class="btn" data-act="export">💾 Télécharger une sauvegarde</button><button class="btn" data-act="import-json">📂 Restaurer une sauvegarde</button><input type="file" id="json-file" accept=".json,application/json" hidden>
@@ -1187,7 +1296,20 @@ document.addEventListener("click", async ev => {
       const blob = new Blob([JSON.stringify(S, null, 1)], {type:"application/json"});
       const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `appreciations-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); break; }
     case "import-json": $("#json-file").click(); break;
+    case "sync-ok": {
+      sync.owner = $("#s-owner").value.trim(); sync.repo = $("#s-repo").value.trim(); sync.path = $("#s-path").value.trim() || "generateur-appreciations.json";
+      const t = $("#s-token").value.trim(); if (t){ try { localStorage.setItem(CLE_NUAGE, t); } catch(e){} }
+      try { localStorage.setItem(CLE_SYNC, JSON.stringify(sync)); } catch(e){}
+      depotPrive = false;
+      if (!syncActive()){ etatSync("Collez d'abord votre clé GitHub dans la case.", false); return; }
+      renderReglages(); synchroniser(); break; }
+    case "sync-now": if (syncActive()) synchroniser(); else etatSync("Renseignez d'abord la clé GitHub ci-dessus.", false); break;
+    case "sync-off":
+      if (b.dataset.arme !== "1"){ b.dataset.arme = "1"; b.textContent = "Confirmer : vos autres outils seront aussi déconnectés"; setTimeout(() => { b.dataset.arme = ""; b.textContent = "Effacer la clé de ce navigateur"; }, 4000); return; }
+      try { localStorage.removeItem(CLE_NUAGE); } catch(e){}
+      renderReglages(); etatSync("Clé effacée de ce navigateur. Vos données restent ici, sans synchronisation."); break;
     case "del-class": if (!c || !confirm(`Supprimer définitivement la classe ${c.nom} et toutes ses appréciations ?`)) return;
+      S.supprimes = S.supprimes || {}; S.supprimes[c.id] = Date.now();
       S.classes = S.classes.filter(x => x !== c); S.cur = (S.classes[0] || {}).id || null; selId = null; sauver(); renderAll(); break;
     case "imp-cancel": $("#dlg-import").close(); break;
     case "imp-go": validerImport(); break;
@@ -1233,7 +1355,7 @@ document.addEventListener("change", ev => {
   if (t.id === "imp-recent"){ if (imp.evals.length && !imp.dates){ inverserImport(); renderApercu(); } return; }
   if (t.id === "json-file" && t.files[0]){
     const fr = new FileReader();
-    fr.onload = () => { try { const d = JSON.parse(fr.result); if (!d.classes) throw 0; if (!confirm("Remplacer toutes les données actuelles par cette sauvegarde ?")) return; S = d; normaliser(); selId = null; sauver(); renderAll(); toast("Sauvegarde restaurée"); } catch(_){ alert("Ce fichier n'est pas une sauvegarde valide."); } };
+    fr.onload = () => { try { const d = JSON.parse(fr.result); if (!d.classes) throw 0; if (!confirm("Remplacer toutes les données actuelles par cette sauvegarde ?")) return; S = d; normaliser(); snap.clear(); S.classes.forEach(x => x.maj = Date.now()); S.cfgMaj = Date.now(); selId = null; sauver(); renderAll(); toast("Sauvegarde restaurée"); } catch(_){ alert("Ce fichier n'est pas une sauvegarde valide."); } };
     fr.readAsText(t.files[0]); t.value = "";
   }
 });
@@ -1655,7 +1777,9 @@ function demo(){
 
 /* ================= Démarrage ================= */
 if (!S.cur && S.classes.length) S.cur = S.classes[0].id;
+marquer();
 renderAll();
+if (syncActive()){ etatSync("Synchronisation en cours…"); planifierSync(300); } else etatSync(syncMsg);
 </script>
 </body>
 </html>
