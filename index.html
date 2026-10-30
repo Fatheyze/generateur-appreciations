@@ -227,9 +227,9 @@ details p,details li{line-height:1.5;font-size:14px}
     <h2>Importer les notes depuis Pronote</h2>
     <p class="muted" style="margin-top:0">Tout se passe dans votre navigateur : aucune donnée d'élève n'est envoyée sur Internet.</p>
     <div class="drop" id="drop">
-      <b>📊 Déposez ici le fichier Excel exporté de Pronote</b><br>
-      <span class="muted">(.xlsx, .xls, .ods ou .csv) · ou des captures d'écran du tableau de notes · cliquez pour choisir, ou Ctrl+V pour coller une capture</span>
-      <input type="file" id="imp-file" accept=".xlsx,.xls,.ods,.csv,image/*" multiple hidden>
+      <b>📄 Déposez ici le relevé PDF ou le fichier exporté de Pronote</b><br>
+      <span class="muted">PDF (recommandé : il contient le titre des devoirs), .csv, .xlsx · ou des captures d'écran · cliquez pour choisir, ou Ctrl+V pour coller une capture</span>
+      <input type="file" id="imp-file" accept=".pdf,.xlsx,.xls,.ods,.csv,image/*" multiple hidden>
     </div>
     <div class="ocr-status" id="ocr-status"></div>
     <details>
@@ -245,7 +245,8 @@ details p,details li{line-height:1.5;font-size:14px}
     <details>
       <summary>Comment ça marche ?</summary>
       <ul>
-        <li><b>Fichier Excel</b> (recommandé) : exportez le tableau des notes de la classe depuis Pronote. L'outil repère seul les élèves, la colonne « Moyenne » et chaque devoir avec sa date, son barème (/5, /10…), son coefficient et son <b>titre</b>.</li>
+        <li><b>Relevé PDF</b> (recommandé) : dans Pronote, imprimez le tableau des notes de la classe en PDF. La légende en bas de page donne le titre de chaque devoir, et l'outil en déduit le chapitre.</li>
+        <li><b>Fichier CSV ou Excel</b> : exportez le tableau des notes de la classe depuis Pronote. L'outil repère seul les élèves, la colonne « Moyenne » et chaque devoir avec sa date, son barème (/5, /10…), son coefficient et son <b>titre</b>.</li>
         <li><b>Le titre du devoir</b> sert à reconnaître le chapitre (« Fractions », « Théorème de Pythagore », « DM proportionnalité », « Interro automatismes »…). Vérifiez ou corrigez le chapitre dans le tableau « Évaluations » ci-dessous.</li>
         <li><b>Captures d'écran</b> : elles marchent aussi, mais Pronote n'y affiche pas les titres des devoirs. Il faudra donc choisir les chapitres à la main.</li>
         <li>Les lignes en orange sont à vérifier : les notes lues ne redonnent pas la moyenne.</li>
@@ -300,6 +301,7 @@ const DOMAINES = [
   {id:"trigo", l:"Trigonométrie", p:"en trigonométrie", n:"la trigonométrie", re:/trigo|cosinus|sinus|tangente/i},
   {id:"litteral", l:"Calcul littéral", p:"en calcul littéral", n:"le calcul littéral", re:/litt[ée]ral|d[ée]velopp|factoris|identit[ée]s? remarquable|distributivit|expressions? alg[ée]br/i},
   {id:"equations", l:"Équations", p:"dans la résolution d'équations", n:"la résolution d'équations", re:/[ée]quation/i},
+  {id:"algebre", l:"Algèbre", p:"en algèbre", n:"l'algèbre", re:/alg[eè]bre/i},
   {id:"fonctions", l:"Fonctions", p:"sur les fonctions", n:"les fonctions", re:/fonction|affine|lin[ée]aire|ant[ée]c[ée]dent/i},
   {id:"probas", l:"Probabilités", p:"en probabilités", n:"les probabilités", re:/probabilit|al[ée]atoire/i},
   {id:"propor", l:"Proportionnalité", p:"en proportionnalité", n:"la proportionnalité", re:/proportion|pourcentage|[ée]chelle|vitesse|ratio/i},
@@ -325,9 +327,9 @@ const TYPES = [["ctrl","Contrôle"],["lecon","Interro de leçon / automatismes"]
 const detecterDomaine = t => (DOMAINES.find(d => d.re && d.re.test(t || "")) || {}).id || "";
 function detecterType(t){
   t = t || "";
-  if (/\bdm\b|devoir (à la )?maison|\bmaison\b/i.test(t)) return "dm";
+  if (/\bdm\b|devoir (à la )?maison|\bmaison\b|kwyk|labomep|travail du trimestre/i.test(t)) return "dm";
   if (/brevet|\bdnb\b/i.test(t)) return "brevet";
-  if (/interro|flash|automatism|calcul mental|le[çc]on|\bqcm\b|questions? rapides?/i.test(t)) return "lecon";
+  if (/interro|flash|automatism|calcul mental|le[çc]on|\bqcm\b|questions? rapides?|kh?olles?\b/i.test(t)) return "lecon";
   return "ctrl";
 }
 
@@ -1536,7 +1538,7 @@ function renderApercu(){
 function validerImport(){
   if (!imp.rows.length) return;
   let c = S.classes.find(x => x.id === $("#imp-classe").value);
-  if (!c){ const nom = prompt("Nom de la nouvelle classe (ex. : 6B, 3A) :", ""); if (!nom || !nom.trim()) return; c = nouvelleClasse(nom.trim()); S.classes.push(c); }
+  if (!c){ const nom = prompt("Nom de la nouvelle classe (ex. : 6B, 3A) :", imp.classe || ""); if (!nom || !nom.trim()) return; c = nouvelleClasse(nom.trim()); if (/^(T[123]|S[12])$/.test(imp.periode || "")) c.periode = imp.periode; S.classes.push(c); }
   S.cur = c.id;
   const fusion = $("#imp-fusion").value;
   const cle = (n, p) => (n + " " + p).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
@@ -1625,6 +1627,79 @@ async function lireTableur(file){
   } catch(err){
     console.error(err);
     st.textContent = "⚠️ Impossible de lire ce fichier (une connexion Internet est nécessaire la première fois).";
+  }
+}
+
+// Lecture d'un relevé de notes PDF de Pronote (items texte positionnés) → tableau (lignes × colonnes) + infos
+function analyserPDF(items){
+  items = items.filter(it => it.t && it.t.trim()).map(it => ({...it, t:it.t.trim(), cx:(it.x + it.x1) / 2}));
+  if (!items.length) return null;
+  const hMoy = avg(items.map(it => it.h || 10)) || 10, lignes = [];
+  [...items].sort((a, b) => a.y - b.y).forEach(it => { const L = lignes[lignes.length - 1]; if (L && Math.abs(it.y - L.y) < hMoy * .45){ L.w.push(it); } else lignes.push({y:it.y, w:[it]}); });
+  lignes.forEach(L => { L.w.sort((a, b) => a.x - b.x); L.txt = L.w.map(w => w.t).join(" ").replace(/\s+/g, " "); });
+  const info = {classe:"", periode:"", titres:{}};
+  lignes.forEach(L => {
+    let m = L.txt.match(/Classe\s*:\s*([^/]+?)\s*(\/|$)/i); if (m && !info.classe) info.classe = m[1].trim();
+    m = L.txt.match(/(Trimestre|Semestre)\s*(\d)/i); if (m && !info.periode) info.periode = (m[1][0].toUpperCase()) + m[2];
+    m = L.txt.match(/^\((\d{1,2})\)\s*(.+)$/); if (m) info.titres[+m[1]] = m[2].trim();
+  });
+  // ligne d'en-tête : celle qui contient « Moyenne »
+  const iH = lignes.findIndex(L => L.w.some(w => /^moyenne$/i.test(w.t)) && !/classe/i.test(L.txt));
+  if (iH < 0) return null;
+  const H = lignes[iH], wMoy = H.w.find(w => /^moyenne$/i.test(w.t));
+  const ancres = H.w.filter(w => w.x >= wMoy.x - 1);           // Moyenne, N.R., puis une colonne par devoir
+  const limiteNom = wMoy.x - 4;
+  const proche = x => ancres.reduce((b, a) => Math.abs(a.cx - x) < Math.abs(b.cx - x) ? a : b, ancres[0]);
+  // dates (lignes juste au-dessus de l'en-tête)
+  const dates = new Map();
+  lignes.slice(Math.max(0, iH - 3), iH).forEach(L => L.w.forEach(w => { if (/^\d{1,2}\/\d{1,2}(\/\d{2,4})?$/.test(w.t)) dates.set(proche(w.cx), w.t); }));
+  // titres des devoirs (légende (1), (2)… dans l'ordre des colonnes)
+  const colsDevoirs = ancres.filter(a => a !== wMoy && !/^n\.?\s?r\.?$/i.test(a.t));
+  const aoa = [
+    ["", ...ancres.map(a => colsDevoirs.includes(a) ? (info.titres[colsDevoirs.indexOf(a) + 1] || "") : "")],
+    ["", ...ancres.map(a => dates.get(a) || "")],
+    [H.w.filter(w => w.x1 < limiteNom).map(w => w.t).join(" ") || "Élèves", ...ancres.map(a => a.t)]
+  ];
+  let prec = null;
+  for (const L of lignes.slice(iH + 1)){
+    if (/^\(\d{1,2}\)/.test(L.txt)) break;
+    const nomW = L.w.filter(w => w.x1 < limiteNom), valW = L.w.filter(w => w.x1 >= limiteNom);
+    const nom = nomW.map(w => w.t).join(" ").trim();
+    if (!nom) continue;
+    if (!valW.length && prec && !/moyenne/i.test(nom)){ prec[0] += " " + nom; continue; } // nom sur deux lignes
+    const row = [nom, ...ancres.map(() => "")];
+    valW.forEach(w => { const a = proche(w.cx), k = ancres.indexOf(a) + 1; row[k] = row[k] ? row[k] + " " + w.t : w.t; });
+    aoa.push(row); prec = /moyenne/i.test(nom) ? null : row;
+  }
+  return {aoa, info};
+}
+
+async function lirePDF(file){
+  const st = $("#ocr-status");
+  try {
+    st.textContent = "⏳ Lecture du PDF…";
+    await chargerScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", () => window.pdfjsLib);
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const doc = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+    const items = []; let dy = 0;
+    for (let n = 1; n <= doc.numPages; n++){
+      const page = await doc.getPage(n), vp = page.getViewport({scale:1}), tc = await page.getTextContent();
+      tc.items.forEach(it => { if (!it.str || !it.str.trim()) return; const hh = Math.abs(it.transform[3]) || it.height || 10;
+        items.push({t:it.str, x:it.transform[4], x1:it.transform[4] + (it.width || 0), y:dy + vp.height - it.transform[5] - hh, h:hh}); });
+      dy += vp.height + 50;
+    }
+    const lu = analyserPDF(items);
+    if (!lu){ st.textContent = "⚠️ Ce PDF ne ressemble pas au tableau de notes de Pronote (pas de colonne « Moyenne » trouvée)."; return; }
+    imp = {...parseTableau(lu.aoa), source:"pdf", classe:lu.info.classe, periode:lu.info.periode};
+    const ex = S.classes.find(c => c.nom.trim().toLowerCase() === (lu.info.classe || "").toLowerCase());
+    $("#imp-classe").value = ex ? ex.id : "__new";
+    const repris = reprendreChapitres();
+    renderApercu();
+    const classes = imp.evals.filter(ev => ev.dom).length;
+    st.textContent = imp.rows.length ? `✅ Classe ${lu.info.classe || "?"}${lu.info.periode ? " · " + lu.info.periode : ""} : ${imp.rows.length} élèves et ${imp.evals.length} évaluations, dont ${classes} rangée(s) automatiquement dans un chapitre d'après leur titre.${repris ? "" : ""} Vérifiez les chapitres puis importez.` : "⚠️ Aucun élève trouvé dans ce PDF.";
+  } catch(err){
+    console.error(err);
+    st.textContent = "⚠️ Impossible de lire ce PDF (une connexion Internet est nécessaire la première fois).";
   }
 }
 
@@ -1733,6 +1808,8 @@ async function lireCaptures(files){
 }
 function fichiersDeposes(files){
   files = [...files];
+  const pdf = files.find(f => /\.pdf$/i.test(f.name) || f.type === "application/pdf");
+  if (pdf) return lirePDF(pdf);
   const tab = files.find(f => /\.(xlsx|xlsm|xls|ods|csv)$/i.test(f.name) || /sheet|excel|csv/i.test(f.type));
   if (tab) return lireTableur(tab);
   const imgs = files.filter(f => f.type.startsWith("image/"));
