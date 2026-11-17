@@ -334,32 +334,7 @@ function detecterType(t){
 }
 
 /* ================= Banque de phrases ================= */
-const RES = {
-  exc:     ["Excellent trimestre.", "Un trimestre remarquable en mathématiques.", "Excellents résultats ce trimestre."],
-  tb:      ["Très bon trimestre.", "Très bons résultats ce trimestre.", "Les résultats sont très satisfaisants."],
-  bien:    ["Bon trimestre.", "Les résultats sont satisfaisants.", "Ensemble satisfaisant ce trimestre."],
-  moyen:   ["Trimestre correct, mais les résultats restent fragiles.", "Les résultats sont justes.", "Les résultats sont corrects mais peuvent progresser."],
-  fragile: ["Trimestre difficile.", "Les résultats sont fragiles.", "Les résultats sont en dessous des attentes."],
-  insuf:   ["Les résultats sont insuffisants.", "Trimestre très difficile en mathématiques.", "Les résultats sont nettement insuffisants."]
-};
-// Ouvertures avec le prénom ({P})
-const RES_P = {
-  exc:     ["{P} réalise un excellent trimestre.", "{P} réalise un trimestre remarquable en mathématiques.", "{P} obtient d'excellents résultats ce trimestre."],
-  tb:      ["{P} réalise un très bon trimestre.", "{P} obtient de très bons résultats ce trimestre."],
-  bien:    ["{P} réalise un bon trimestre.", "{P} obtient des résultats satisfaisants.", "{P} réalise un trimestre satisfaisant."],
-  moyen:   ["{P} réalise un trimestre correct, mais ses résultats restent fragiles.", "{P} obtient des résultats justes.", "{P} obtient des résultats corrects qui peuvent encore progresser."],
-  fragile: ["{P} traverse un trimestre difficile.", "{P} obtient des résultats fragiles.", "Les résultats de {P} sont en dessous des attentes."],
-  insuf:   ["{P} obtient des résultats insuffisants.", "{P} traverse un trimestre très difficile en mathématiques.", "Les résultats de {P} sont nettement insuffisants."]
-};
-const NIV_LABEL = {exc:"Excellent", tb:"Très bien", bien:"Bien", moyen:"Juste", fragile:"Fragile", insuf:"Insuffisant"};
-const TEND = {
-  hausse:      ["les notes sont en nette progression au fil du trimestre.", "on note de réels progrès au fil du trimestre.", "la progression au fil du trimestre est encourageante."],
-  hausse_prev: ["les résultats progressent nettement par rapport au trimestre précédent.", "la progression par rapport au trimestre précédent est réelle."],
-  baisse:      ["Les notes sont en baisse au fil du trimestre.", "Une baisse des résultats est à noter en fin de trimestre."],
-  baisse_prev: ["Les résultats sont en baisse par rapport au trimestre précédent.", "Une baisse est à noter par rapport au trimestre précédent."],
-  irregulier:  ["Les notes sont très irrégulières d'un devoir à l'autre.", "La régularité fait défaut d'un devoir à l'autre."],
-  stable_haut: ["Les résultats se maintiennent à un très bon niveau."]
-};
+const NIV_LABEL = {exc:"Excellent", satisf:"Satisfaisant", correct:"Correct", insuf:"Insuffisant"};
 const TEND_LABEL = {hausse:"↗ En hausse", baisse:"↘ En baisse", irregulier:"↕ Irrégulier", stable:"→ Stable"};
 
 // sec : "trav" (travail) ou "comp" (comportement) · x = groupe exclusif · p = priorité si le texte est trop long
@@ -404,26 +379,6 @@ const GROUPES = [
 ];
 const TAGS = {}, TAG_GRP = {};
 GROUPES.forEach(G => G.tags.forEach(t => { TAGS[t.id] = t; TAG_GRP[t.id] = G; }));
-const CONNECT = {
-  bienveillant: ["Toutefois, ", "Cependant, ", "Attention toutefois : "],
-  neutre: ["Cependant, ", "Toutefois, ", "En revanche, "],
-  ferme: ["Cependant, ", "En revanche, ", "Toutefois, "]
-};
-const CONCL = {
-  felicitations: {tu:["Félicitations, continue ainsi !", "Bravo, continue sur cette voie !", "Excellent travail, continue ainsi !"], neutre:["Félicitations, il faut poursuivre ainsi.", "Un excellent trimestre, à poursuivre."]},
-  continuer: {tu:["Continue ainsi !", "Poursuis tes efforts dans cette voie.", "Continue sur cette lancée !"], neutre:["Il faut poursuivre dans cette voie.", "Ces efforts sont à poursuivre."]},
-  reprendre: {tu:["Reprends ces notions pour progresser encore.", "En retravaillant ces points, tu peux encore progresser.", "Continue tes efforts en revoyant ces notions."], neutre:["Il faut reprendre ces notions pour progresser encore.", "En retravaillant ces points, de nouveaux progrès sont possibles."]},
-  potentiel_comp: {tu:["Plus de concentration en classe te permettrait d'aller encore plus loin.", "Tu as les capacités pour aller plus loin avec une attitude plus posée."], neutre:["Une attitude plus posée permettrait d'aller encore plus loin.", "Les capacités sont là : plus de concentration en classe permettrait de les exploiter pleinement."]},
-  potentiel_impl: {tu:["Davantage d'implication en classe te permettrait d'aller encore plus loin.", "Tu as les capacités pour aller plus loin en t'impliquant davantage."], neutre:["Davantage d'implication en classe permettrait d'aller encore plus loin."]},
-  potentiel_trav: {tu:["Un travail plus régulier te permettrait d'aller encore plus loin.", "Tu as les capacités : mets-les au service d'un travail plus régulier."], neutre:["Un travail plus régulier permettrait d'exploiter pleinement ces capacités.", "Un travail plus régulier permettrait d'aller encore plus loin."]},
-  progres: {tu:["Les progrès sont encourageants, continue !", "C'est sur la bonne voie : persévère !"], neutre:["Les progrès sont encourageants, il faut persévérer.", "C'est sur la bonne voie, il faut continuer."]},
-  perseverer: {tu:["Tes efforts sont réels : persévère, ils finiront par payer.", "Ne te décourage pas et continue tes efforts."], neutre:["Les efforts sont réels, il faut persévérer.", "Il faut persévérer, les efforts finiront par payer."]},
-  travail: {tu:["Un travail régulier à la maison est indispensable pour progresser.", "Un sursaut est attendu au prochain trimestre : tu peux y arriver."], neutre:["Un travail personnel régulier est indispensable pour progresser.", "Un sursaut est attendu au prochain trimestre."]},
-  ferme_comp: {tu:["Un changement d'attitude est impératif dès le prochain trimestre."], neutre:["Un changement d'attitude est impératif dès le prochain trimestre."]},
-  consolider: {tu:["Accroche-toi et reprends les notions fragiles avec régularité.", "Poursuis tes efforts pour consolider tes acquis."], neutre:["Il faut reprendre les notions fragiles avec régularité.", "Des efforts soutenus permettront de consolider les acquis."]},
-  baisse: {tu:["Reste mobilisé pour retrouver ton niveau du début de trimestre.", "Ne relâche pas tes efforts pour retrouver ton meilleur niveau."], neutre:["Il faut rester mobilisé pour retrouver le niveau du début de trimestre.", "Les efforts ne doivent pas se relâcher."]},
-  brevet: {tu:["Le brevet approche : un travail régulier dès maintenant est indispensable."], neutre:["Le brevet approche : un travail régulier dès maintenant est indispensable."]}
-};
 const CL = {
   ouv: {
     tb:["Très bon trimestre pour cette classe.", "La classe réalise un très bon trimestre."],
@@ -492,12 +447,12 @@ function normaliser(){
   (S.classes || []).forEach(c => {
     c.evals = c.evals || [];
     c.cl = c.cl || {ambiance:"agreable", particip:"correcte", invest:"bon", maison:"inegal", hetero:"auto", texte:"", verrou:false, seed:rnd()};
-    c.eleves.forEach(e => { e.res = e.res || {}; e.off = e.off || []; e.tags = e.tags || []; e.notes = e.notes || []; e.nr = e.nr || 0; });
+    c.eleves.forEach(e => { e.res = e.res || {}; e.off = e.off || []; e.tags = e.tags || []; e.notes = e.notes || []; e.nr = e.nr || 0; e.sig = e.sig || []; });
   });
 }
 normaliser();
 // nouveau moteur de rédaction : les appréciations non modifiées à la main sont réécrites
-if (S.moteur !== 2){ (S.classes || []).forEach(c => { c.eleves.forEach(e => { if (!e.verrou) e.texte = ""; }); if (c.cl && !c.cl.verrou) c.cl.texte = ""; }); S.moteur = 2; }
+if ((S.moteur || 0) < 3){ (S.classes || []).forEach(c => { c.eleves.forEach(e => { if (!e.verrou) e.texte = ""; }); if (c.cl && !c.cl.verrou) c.cl.texte = ""; }); S.moteur = 3; }
 let saveT;
 // Repère les classes modifiées (horodatage « maj ») pour fusionner proprement entre appareils
 const snap = new Map();
@@ -610,7 +565,8 @@ function nouvelEleve(nom, prenom){
 }
 
 /* ================= Analyse des résultats ================= */
-function niveau(m){ if (m == null || isNaN(m)) return null; return m >= 16 ? "exc" : m >= 14 ? "tb" : m >= 12 ? "bien" : m >= 10 ? "moyen" : m >= 8 ? "fragile" : "insuf"; }
+// Barème : moins de 10 insuffisant, de 10 à moins de 14 correct, de 14 à moins de 16 satisfaisant, 16 et plus excellent
+function niveau(m){ if (m == null || isNaN(m)) return null; return m >= 16 ? "exc" : m >= 14 ? "satisf" : m >= 10 ? "correct" : "insuf"; }
 function tendanceAuto(e){
   if (e.prev != null && e.moy != null){ const d = e.moy - e.prev; if (d >= 1) return {t:"hausse", src:"prev"}; if (d <= -1) return {t:"baisse", src:"prev"}; }
   const n = e.notes || [], w = e.pds && e.pds.length === n.length ? e.pds : n.map(() => 1);
@@ -688,245 +644,454 @@ function effTags(e, c, me){
   return s;
 }
 
-/* ================= Génération d'une appréciation ================= */
-function conclusion(e, c, niv, td, tags, r, diffs){
-  const st = S.cfg.concl === "neutre" ? "neutre" : "tu";
-  const has = ids => ids.some(i => tags.has(i));
-  const negDe = sec => [...tags].some(i => TAGS[i] && !TAGS[i].pos && !["timide","particip_insuf"].includes(i) && TAG_GRP[i].sec === sec);
-  const negComp = negDe("comp"), negTrav = [...tags].some(i => ["maison_non","maison_irreg","lecons","minimum"].includes(i));
-  const effort = has(["serieux", "volontaire", "maison_ok", "lecons_ok", "applique"]);
-  const grave = has(["insolent", "dissipe"]) || (S.cfg.ton === "ferme" && negComp);
-  let k;
-  if (niv === "exc") k = (!negComp && !negTrav) ? (diffs ? "reprendre" : td.t === "baisse" ? "baisse" : "felicitations") : negComp ? "potentiel_comp" : "potentiel_trav";
-  else if (niv === "tb" || niv === "bien") k = grave ? "ferme_comp" : negComp ? "potentiel_comp" : negTrav ? "potentiel_trav" : diffs ? "reprendre" : td.t === "baisse" ? "baisse" : (td.t === "hausse" && r() < .5 ? "progres" : "continuer");
-  else if (!niv) k = "continuer";
-  else {
-    k = grave ? "ferme_comp" : td.t === "hausse" ? "progres" : negTrav ? "travail" : effort ? "perseverer" : "consolider";
-    if (c && c.niveau === "3e" && (k === "travail" || k === "consolider") && r() < .5) k = "brevet";
-  }
-  if (k === "potentiel_comp" && !has(["bavard","dissipe","insolent"])) k = "potentiel_impl";
-  return CONCL[k][st];
+/* ================= Génération d'une appréciation (moteur 3) =================
+   Les phrases sont tirées de banques variées. Chaque élève garde la liste des formulations
+   utilisées (e.sig) : pour l'élève suivant, on choisit d'abord les formulations les moins
+   employées dans la classe, ce qui évite que deux appréciations se ressemblent. */
+const DE = {pythagore:"sur le théorème de Pythagore", thales:"sur le théorème de Thalès", trigo:"de trigonométrie", litteral:"de calcul littéral",
+  equations:"sur les équations", algebre:"d'algèbre", fonctions:"sur les fonctions", probas:"de probabilités", propor:"sur la proportionnalité",
+  stats:"de statistiques", fractions:"sur les fractions", relatifs:"sur les nombres relatifs", puissances:"sur les puissances", arithm:"d'arithmétique",
+  algo:"d'algorithmique", automat:"d'automatismes", espace:"sur les solides et les volumes", mesures:"sur les aires et les périmètres",
+  transfo:"sur les transformations", decimaux:"sur les nombres décimaux", geometrie:"de géométrie", calcul:"de calcul", problemes:"de résolution de problèmes"};
+// Conseils concrets (infinitifs) par chapitre
+const CONSEIL_DOM = {
+  pythagore:["rédiger chaque démonstration en trois temps (triangle rectangle, égalité de Pythagore, calcul)", "bien distinguer le théorème de sa réciproque et savoir quand employer chacun"],
+  thales:["vérifier l'alignement des points avant d'écrire les rapports, toujours dans le même ordre", "refaire les exercices types du cours en rédigeant chaque étape"],
+  trigo:["connaître parfaitement les formules du cosinus, du sinus et de la tangente", "repérer l'angle, l'hypoténuse et les côtés adjacent et opposé avant tout calcul"],
+  litteral:["s'entraîner chaque semaine à développer et factoriser, en vérifiant ses calculs par un exemple numérique", "revoir la distributivité et les identités remarquables jusqu'à les appliquer sans hésiter"],
+  equations:["vérifier systématiquement une solution en la remplaçant dans l'équation", "isoler l'inconnue étape par étape, en écrivant chaque transformation"],
+  algebre:["revoir les règles de calcul littéral et s'exercer régulièrement"],
+  fonctions:["faire le lien entre tableau de valeurs, représentation graphique et expression", "bien distinguer image et antécédent, à l'aide d'exemples du cours"],
+  probas:["décrire l'ensemble des issues avant de calculer une probabilité", "vérifier qu'une probabilité est toujours comprise entre 0 et 1"],
+  propor:["utiliser avec méthode le tableau de proportionnalité et le produit en croix", "s'entraîner sur des problèmes de pourcentages et d'échelles"],
+  stats:["revoir le calcul de la moyenne, de la médiane et de l'étendue", "s'entraîner à lire et interpréter des tableaux et des graphiques"],
+  fractions:["revoir la mise au même dénominateur et la simplification des fractions", "s'exercer régulièrement au calcul fractionnaire, en détaillant chaque étape"],
+  relatifs:["maîtriser la règle des signes grâce à des exercices courts et réguliers", "s'exercer à additionner et soustraire des relatifs en s'aidant d'une droite graduée"],
+  puissances:["revoir les règles de calcul sur les puissances et la notation scientifique", "s'entraîner régulièrement sur les puissances de 10"],
+  arithm:["connaître les critères de divisibilité et la liste des premiers nombres premiers", "s'entraîner à décomposer un nombre en produit de facteurs premiers"],
+  algo:["tester ses programmes pas à pas pour comprendre chaque instruction", "refaire les activités Scratch du cours en autonomie"],
+  automat:["s'entraîner quelques minutes chaque jour au calcul mental", "revoir régulièrement les questions flash pour automatiser les réflexes"],
+  espace:["apprendre les formules de volume et soigner les conversions d'unités", "s'aider de patrons et de croquis pour se représenter les solides"],
+  mesures:["bien distinguer aire et périmètre et vérifier les unités de chaque résultat", "revoir le tableau de conversion et s'en servir systématiquement"],
+  transfo:["s'aider du papier calque et réviser les propriétés de conservation", "refaire les constructions du cours en soignant le tracé"],
+  decimaux:["revoir la numération et la comparaison des nombres décimaux", "s'entraîner à placer des décimaux sur une droite graduée"],
+  geometrie:["soigner les constructions avec un matériel adapté et justifier par les propriétés du cours", "apprendre les propriétés des figures usuelles et les citer dans ses justifications"],
+  calcul:["respecter les priorités opératoires et vérifier chaque résultat", "s'exercer régulièrement au calcul posé et au calcul mental"],
+  problemes:["souligner les données utiles et conclure chaque problème par une phrase réponse", "décomposer un problème en étapes avant de se lancer dans les calculs"],
+  raisonnement:["justifier chaque étape d'un raisonnement par une propriété du cours"],
+  redaction:["rédiger chaque réponse en phrases complètes, en citant la propriété utilisée"]
+};
+// Ce qui ne va pas (propositions, sans majuscule ni point) et conseils associés
+const DEFAUT = {
+  bavard:["les bavardages, trop fréquents, nuisent à sa concentration", "le bavardage freine trop souvent sa mise au travail"],
+  distrait:["l'attention se disperse trop souvent en classe", "un manque de concentration l'empêche d'exploiter pleinement ses capacités"],
+  passif:["l'attitude en classe reste trop passive", "{s} reste trop souvent en retrait pendant les activités"],
+  dissipe:["l'attitude est trop souvent dissipée", "l'agitation en classe nuit à son travail comme à celui des autres"],
+  timide:["{s} n'ose pas encore assez prendre la parole", "la participation orale reste trop discrète"],
+  particip_insuf:["la participation orale est quasi inexistante", "{s} ne participe pas suffisamment à l'oral"],
+  lent:["le rythme de travail en classe est trop lent", "{s} manque encore de rapidité, notamment en évaluation"],
+  methode:["la rédaction manque encore de rigueur et de méthode", "le manque de méthode dans la rédaction coûte de nombreux points"],
+  minimum:["{s} se contente trop souvent du strict minimum", "l'investissement reste en deçà de ses capacités"],
+  materiel:["les oublis de matériel sont trop fréquents", "le matériel est trop souvent oublié"],
+  maison_irreg:["le travail à la maison manque de régularité", "les devoirs ne sont pas toujours faits"],
+  maison_non:["le travail personnel est très insuffisant", "les devoirs sont trop rarement faits"],
+  lecons:["les leçons ne sont pas apprises avec assez de régularité", "l'apprentissage du cours reste trop superficiel"],
+  lecons_data:["les interrogations de leçon révèlent un apprentissage insuffisant du cours", "le cours n'est pas appris avec assez de régularité, comme le montrent les interrogations"],
+  dm_sup:["les devoirs maison sont réussis, mais les contrôles ne le confirment pas encore", "l'écart entre les devoirs maison et les contrôles montre que les méthodes ne sont pas encore assimilées"],
+  ctrl_sup:["les devoirs maison sont moins réussis que les contrôles, ce qui interroge sur le soin qui leur est consacré"],
+  baisse:["les résultats fléchissent nettement en fin de trimestre", "la fin de trimestre marque un net recul des résultats"],
+  baisse_prev:["les résultats sont en recul par rapport au trimestre précédent", "le niveau du trimestre précédent n'a pas été maintenu"],
+  irregulier:["les notes restent très irrégulières d'un devoir à l'autre", "les résultats manquent de constance, avec de fortes variations d'un devoir à l'autre"],
+  dernier_bas:["le dernier devoir est nettement en deçà de ses résultats habituels"],
+  sous_classe:["la moyenne reste en dessous de celle de la classe"]
+};
+const CONSEIL = {
+  bavard:["se placer loin des sources de distraction et se mettre au travail dès le début de l'heure", "réserver les échanges aux moments prévus et rester {concentré|concentrée} sur la tâche"],
+  distrait:["noter chaque consigne et vérifier régulièrement qu'{il|elle} suit bien le cours", "reformuler la consigne avant de commencer chaque exercice"],
+  passif:["se lancer dans chaque exercice sans attendre la correction", "s'impliquer activement dans les recherches menées en classe"],
+  dissipe:["adopter dès l'entrée en classe une attitude calme et posée", "canaliser son énergie au service du travail"],
+  timide:["prendre la parole au moins une fois par séance", "oser proposer ses réponses à l'oral, même sans être {sûr|sûre} de soi"],
+  particip_insuf:["lever la main régulièrement pour proposer une réponse ou poser une question"],
+  lent:["s'entraîner en temps limité pour gagner en efficacité", "se mettre au travail sans attendre et mieux gérer son temps en évaluation"],
+  methode:["citer la propriété utilisée à chaque étape et conclure par une phrase", "soigner la présentation et la rédaction en s'appuyant sur les modèles du cours"],
+  minimum:["aller au bout de chaque exercice et s'attaquer aux questions d'approfondissement", "viser plus haut que le strict nécessaire"],
+  materiel:["préparer son cartable la veille, sans oublier calculatrice, règle et compas"],
+  maison:["noter les devoirs dans l'agenda et les faire le jour même", "consacrer chaque soir un temps fixe aux mathématiques, même court"],
+  lecons:["apprendre la leçon le soir même, en refaisant par écrit les exemples du cours", "se faire réciter définitions et propriétés avant chaque interrogation"],
+  dm_sup:["refaire {seul|seule}, sans aide, les exercices corrigés avant chaque contrôle", "s'assurer de comprendre chaque étape des devoirs maison pour pouvoir la refaire en classe"],
+  ctrl_sup:["consacrer davantage de temps et de soin aux devoirs maison"],
+  baisse:["retrouver un rythme de travail régulier dès les premières semaines", "réviser plusieurs jours avant chaque évaluation plutôt que la veille"],
+  irregulier:["préparer chaque évaluation avec la même rigueur, en révisant plusieurs jours à l'avance", "travailler un peu chaque jour plutôt que tout la veille du contrôle"],
+  exc:["s'attaquer aux exercices d'approfondissement et aux problèmes ouverts", "continuer à soigner une rédaction rigoureuse et complète", "relever des défis plus ambitieux, comme les problèmes de recherche"],
+  satisf:["soigner davantage la rédaction pour ne plus perdre de points inutilement", "s'entraîner sur des exercices plus exigeants pour viser l'excellence", "relire chaque copie pour éliminer les dernières erreurs d'inattention"],
+  correct:["refaire, avant chaque contrôle, les exercices types du chapitre", "travailler un peu chaque jour plutôt que tout la veille du contrôle", "relire systématiquement ses copies pour traquer les erreurs de calcul"],
+  insuf:["reprendre les exercices corrigés en classe jusqu'à savoir les refaire {seul|seule}", "venir poser ses questions dès qu'une notion n'est pas comprise", "s'appuyer sur le dispositif Devoirs faits pour être {accompagné|accompagnée}"]
+};
+// Qualités, sous forme nominale
+const QUALITE = {participe:"sa participation active et pertinente à l'oral", serieux:"son sérieux", applique:"le soin apporté à son travail", autonome:"son autonomie",
+  volontaire:"sa persévérance face aux difficultés", maison_ok:"la régularité de son travail personnel", lecons_ok:"l'apprentissage rigoureux des leçons",
+  exemplaire:"son attitude exemplaire", concentre:"sa qualité d'écoute", agreable:"son attitude agréable et respectueuse"};
+const BILAN = {
+  exc:[["{s} réalise un excellent trimestre"], ["Excellent trimestre"], ["Le bilan de ce trimestre est excellent"], ["{s} signe un excellent trimestre"], ["Les résultats de ce trimestre sont excellents", 1], ["{s} obtient d'excellents résultats", 1], ["Le travail fourni ce trimestre est excellent"], ["{s} livre un excellent trimestre"], ["Bilan excellent ce trimestre"], ["Un excellent trimestre en mathématiques"]],
+  satisf:[["{s} réalise un trimestre {A}satisfaisant"], ["Trimestre {A}satisfaisant"], ["Le bilan de ce trimestre est {A}satisfaisant"], ["{s} obtient des résultats {A}satisfaisants", 1], ["Les résultats de ce trimestre sont {A}satisfaisants", 1], ["Ensemble {A}satisfaisant"], ["Le travail fourni ce trimestre est {A}satisfaisant"], ["{s} livre un trimestre {A}satisfaisant"], ["Bilan {A}satisfaisant ce trimestre"], ["Un trimestre {A}satisfaisant en mathématiques"]],
+  correct:[["{s} réalise un trimestre correct"], ["Trimestre correct"], ["Le bilan de ce trimestre est correct"], ["{s} obtient des résultats corrects", 1], ["Les résultats de ce trimestre sont corrects", 1], ["Ensemble correct"], ["Le travail fourni ce trimestre est correct"], ["{s} livre un trimestre correct"], ["Bilan correct ce trimestre"], ["Un trimestre correct en mathématiques"]],
+  insuf:[["{s} réalise un trimestre {A}insuffisant"], ["Trimestre {A}insuffisant"], ["Le bilan de ce trimestre est {A}insuffisant"], ["{s} obtient des résultats {A}insuffisants", 1], ["Les résultats de ce trimestre sont {A}insuffisants", 1], ["Le niveau atteint ce trimestre reste {A}insuffisant"], ["Le travail fourni ce trimestre est {A}insuffisant"], ["{s} livre un trimestre {A}insuffisant"], ["Bilan {A}insuffisant ce trimestre"], ["Un trimestre {A}insuffisant en mathématiques"]]
+};
+const BILAN_PLUS = {
+  bon:{hausse:[", porté{x} par une progression constante au fil des devoirs", ", avec une nette progression au fil des semaines"],
+    hausse_prev:[", en net progrès par rapport au trimestre précédent"], regulier:[", avec une belle régularité d'un devoir à l'autre", ", sans faiblir d'un devoir à l'autre"],
+    top:[", avec plusieurs des meilleures notes de la classe"], au_dessus:[", bien au-dessus de la moyenne de la classe"], dernier_haut:[", conclu{x} par un dernier devoir particulièrement réussi"]},
+  correct:{hausse:[", avec une progression au fil des devoirs", ", et la progression au fil des devoirs est encourageante"], hausse_prev:[", en progrès par rapport au trimestre précédent"],
+    dernier_haut:[", conclu{x} par un dernier devoir encourageant"]},
+  insuf:{hausse:[", même si les notes progressent au fil des semaines", ", malgré une progression encourageante au fil des devoirs"], hausse_prev:[", même si un progrès se dessine par rapport au trimestre précédent"],
+    dernier_haut:[", même si le dernier devoir, plus réussi, est encourageant"]}
+};
+const FIN = {
+  exc:{tu:["Bravo{V}, continue ainsi !", "Félicitations{V}, et garde cette belle exigence !", "Un très beau trimestre{V} : bravo !", "Continue sur cette remarquable lancée{V} !", "Toutes mes félicitations pour ce travail de grande qualité{V}.", "Bravo pour ce parcours exemplaire{V} !"],
+    neutre:["Félicitations pour ce travail de grande qualité.", "Un trimestre remarquable, à poursuivre avec la même exigence.", "Toutes mes félicitations.", "Il faut garder cette belle exigence."]},
+  exc_comp:{tu:["Tes capacités sont remarquables{V} : une attitude irréprochable te permettra d'aller encore plus loin.", "Mets autant d'énergie dans ton attitude que dans ton travail{V}, et tout te sera possible."],
+    neutre:["Une attitude plus posée permettrait d'exploiter pleinement ces belles capacités.", "Les capacités sont remarquables : une attitude irréprochable permettrait d'aller encore plus loin."]},
+  exc_trav:{tu:["Avec un travail plus régulier, tu pourrais aller encore plus loin{V}.", "Ne te repose pas sur tes facilités{V} : la régularité fera la différence."],
+    neutre:["Un travail plus régulier permettrait d'exploiter pleinement ces capacités.", "La régularité dans le travail fera la différence."]},
+  satisf:{tu:["C'est du bon travail{V} : vise maintenant l'excellence !", "Continue ainsi{V}, l'excellence est à ta portée.", "Encore un effort{V}, et l'excellence n'est pas loin !", "Bon travail{V}, poursuis dans cette voie.", "Tu es sur la bonne voie{V} : garde le cap !"],
+    neutre:["Un bon travail, à poursuivre pour viser l'excellence.", "Il faut poursuivre dans cette voie.", "L'excellence est à portée : à poursuivre."]},
+  satisf_neg:{tu:["Tu as les moyens d'aller plus loin{V} : à toi de jouer !", "Corrige ces points{V}, et l'excellence sera à ta portée.", "Tu peux viser plus haut{V} : je compte sur toi."],
+    neutre:["En corrigeant ces points, l'excellence est à portée.", "Les moyens d'aller plus loin sont là."]},
+  baisse:{tu:["Ne relâche pas tes efforts pour retrouver ton meilleur niveau{V}.", "Reste {mobilisé|mobilisée}{V} : ton meilleur niveau est à portée."],
+    neutre:["Les efforts ne doivent pas se relâcher.", "Il faut rester mobilisé pour retrouver le meilleur niveau."]},
+  progres:{tu:["Les progrès sont là{V} : continue !", "C'est sur la bonne voie{V}, persévère !", "Belle dynamique{V}, ne lâche rien !"],
+    neutre:["Les progrès sont encourageants, il faut persévérer.", "La dynamique est bonne : à poursuivre."]},
+  correct:{tu:["Tu as les moyens de faire mieux{V} : à toi de jouer !", "Avec un peu plus de régularité, tu peux viser plus haut{V}.", "Courage{V}, un trimestre satisfaisant est à ta portée.", "Continue tes efforts{V}, ils paieront.", "Garde confiance et mets ces conseils en pratique{V}."],
+    neutre:["Des résultats satisfaisants sont à portée avec plus de régularité.", "Il faut poursuivre les efforts pour viser plus haut.", "Ces conseils, mis en pratique, permettront de progresser."]},
+  travail:{tu:["Un travail régulier fera toute la différence{V} : je compte sur toi.", "Un sursaut est attendu{V} : tu en es capable."],
+    neutre:["Un travail personnel régulier est indispensable pour progresser.", "Un sursaut est attendu {DES}."]},
+  perseverer:{tu:["Tes efforts sont réels{V} : persévère, ils finiront par payer.", "Ne te décourage pas{V}, tu es sur la bonne voie.", "Continue à t'accrocher{V} : tes efforts paieront."],
+    neutre:["Les efforts sont réels : il faut persévérer.", "Il faut persévérer, les efforts finiront par payer."]},
+  insuf:{tu:["Ne te décourage pas{V} : avec un travail régulier, les résultats suivront.", "Un sursaut est indispensable{V}, et tu en es capable.", "Je compte sur toi pour réagir {DES}{V}.", "Accroche-toi{V} : rien n'est perdu si tu te mets au travail dès maintenant."],
+    neutre:["Un net sursaut est attendu {DES}.", "Un travail régulier est indispensable pour redresser la situation.", "Il faut réagir dès maintenant."]},
+  ferme:{tu:["Un changement d'attitude est impératif {DES}{V}.", "J'attends un changement radical d'attitude {DES}{V}."], neutre:["Un changement d'attitude est impératif {DES}.", "Un changement radical d'attitude est exigé {DES}."]},
+  brevet:{tu:["Le brevet approche{V} : chaque semaine de travail compte.", "Pense au brevet{V} : c'est maintenant qu'il se prépare."], neutre:["Le brevet approche : chaque semaine de travail compte.", "Le brevet se prépare dès maintenant."]}
+};
+const LETTRES = ["zéro","un","deux","trois","quatre","cinq","six","sept","huit","neuf","dix"];
+const deInf = x => (/^[aeiouyéèêâîôh]/i.test(x) ? "d'" : "de ") + x;
+const accord = (pl, s, p) => pl ? p : s;
+
+function libEval(ev){
+  const [t, a, f] = {dm:["le devoir maison", "au devoir maison", 0], lecon:["l'interrogation", "à l'interrogation", 1], brevet:["le brevet blanc", "au brevet blanc", 0]}[ev.type] || ["le contrôle", "au contrôle", 0];
+  let q = "";
+  if (ev.type !== "brevet"){ if (ev.dom && DE[ev.dom]) q = " " + DE[ev.dom]; else if (ev.date) q = " du " + ev.date; }
+  return {t:t + q, a:a + q, f};
+}
+// Tout ce que les notes disent de l'élève
+function faits(e, c, me){
+  me = me || moyEvals(c);
+  const a = analyse(e, c, me), m = e.moy;
+  const evs = (c && c.evals || []).filter(ev => e.res[ev.id] != null).map((ev, k) => {
+    const v = e.res[ev.id], autres = c.eleves.map(x => x.res[ev.id]).filter(x => x != null);
+    return {ev, v, cm:me[ev.id], k, rang:1 + autres.filter(x => x > v + 1e-9).length, ex:autres.filter(x => Math.abs(x - v) < 1e-9).length, n:autres.length, lib:libEval(ev)};
+  });
+  const moys = c ? c.eleves.map(x => x.moy).filter(v => v != null && !isNaN(v)) : [];
+  const cmoy = moys.length >= 5 ? avg(moys) : null;
+  const typ = {};
+  evs.forEach(x => { const t = x.ev.type || "ctrl", p = typ[t] = typ[t] || {sw:0, sv:0}; p.sw += poids(x.ev); p.sv += x.v * poids(x.ev); });
+  Object.values(typ).forEach(p => p.m = p.sv / p.sw);
+  const F = {a, evs, cmoy, typ, best:null, worst:null, top:[]};
+  if (m == null) return F;
+  const score = x => x.v + (x.cm != null ? (x.v - x.cm) / 2 : 0) + (x.ev.dom ? .5 : 0);
+  F.best = evs.filter(x => x.ev.type !== "lecon" && (x.v >= 15 || x.v >= Math.max(12, m + 2.5))).sort((p, q) => score(q) - score(p))[0] || null;
+  F.worst = evs.filter(x => x.v <= Math.min(10, m - 3) || (x.cm != null && x.cm - x.v >= 4 && x.v < 12)).sort((p, q) => score(p) - score(q))[0] || null;
+  F.top = evs.filter(x => x.n >= 8 && x.rang <= 3 && x.v >= 14);
+  if (F.best && F.best.n >= 8 && F.best.rang === 1 && F.best.v >= 14) F.premier = F.best.ex > 1 ? "ex" : "seul";
+  if (typ.dm && typ.ctrl){ if (typ.dm.m - typ.ctrl.m >= 4 && typ.ctrl.m < 14) F.dm_sup = 1; else if (typ.ctrl.m - typ.dm.m >= 3) F.ctrl_sup = 1; }
+  if (cmoy != null) F.ecart = m - cmoy;
+  return F;
+}
+// Prochaine période (au T3 / S2, on parle de l'an prochain)
+function prochain(c){
+  const p = String(c && c.periode || "T1"), fin = p === "T3" || p === "S2";
+  return fin ? {AU:"l'an prochain", POUR:"pour l'an prochain", DES:"dès la rentrée"} : {AU:"au prochain trimestre", POUR:"pour le prochain trimestre", DES:"dès le prochain trimestre"};
+}
+// Nombre d'utilisations de chaque formulation dans la classe (y compris l'ancienne version de l'élève, pour qu'une régénération change vraiment)
+// pour une régénération : l'ancienne version de l'élève est fortement évitée
+function usageRegen(c, e){ const u = usageClasse(c, e); (e.sig || []).forEach(id => u.set(id, (u.get(id) || 0) + 1000)); return u; }
+function usageClasse(c, sauf){
+  const u = new Map();
+  (c && c.eleves || []).forEach(x => { if (x !== sauf) (x.sig || []).forEach(id => u.set(id, (u.get(id) || 0) + 1)); });
+  return u;
 }
 
-/* Formes grammaticales de chaque critère, pour rédiger des phrases synthétiques */
-const FORMES = {
-  applique:{adj:"{appliqué|appliquée}"}, autonome:{adj:"efficace et {autonome|autonome}"}, volontaire:{adj:"volontaire"},
-  lent:{vp:"gagner en rapidité"}, methode:{vp:"travailler avec plus de méthode et de rigueur"}, minimum:{vp:"s'investir davantage sans se contenter du minimum", fort:1},
-  maison_ok:{clause:"le travail personnel est fait avec régularité", nom:"un travail régulier à la maison"},
-  lecons_ok:{clause:"les leçons sont bien apprises", nom:"des leçons bien apprises"},
-  maison_irreg:{vp:"faire ses devoirs avec plus de régularité"}, maison_non:{vp:"fournir enfin un vrai travail personnel", fort:1},
-  lecons:{vp:"apprendre ses leçons plus sérieusement"}, materiel:{vp:"penser à apporter son matériel"},
-  serieux:{adj:"{sérieux|sérieuse}"}, agreable:{adj:"agréable"}, exemplaire:{adj:"au comportement exemplaire"}, concentre:{adj:"{attentif|attentive}"},
-  participe:{adj:"{investi|investie} à l'oral"},
-  bavard:{np:"les bavardages", pl:1, vp:"limiter ses bavardages", fort:1},
-  distrait:{np:"un manque de concentration", vp:"gagner en concentration"},
-  dissipe:{np:"une attitude dissipée", vp:"adopter une attitude plus posée", fort:1},
-  passif:{np:"une attitude trop passive", vp:"se montrer plus {actif|active}"},
-  timide:{vp:"oser prendre davantage la parole"}, particip_insuf:{vp:"s'impliquer davantage à l'oral"}
-};
-const OUV = {
-  exc:{p:["{P} réalise un excellent trimestre", "{P} signe un trimestre remarquable"], n:["Excellent trimestre", "Un trimestre remarquable"]},
-  tb:{p:["{P} réalise un très bon trimestre", "{P} signe un très bon trimestre"], n:["Très bon trimestre", "Un très bon trimestre"]},
-  bien:{p:["{P} réalise un bon trimestre", "{P} réalise un trimestre satisfaisant"], n:["Bon trimestre", "Trimestre satisfaisant"]},
-  moyen:{p:["{P} réalise un trimestre correct mais encore fragile", "{P} obtient des résultats justes"], n:["Trimestre correct mais encore fragile", "Des résultats justes ce trimestre"]},
-  fragile:{p:["{P} traverse un trimestre difficile", "{P} obtient des résultats fragiles"], n:["Trimestre difficile", "Des résultats fragiles ce trimestre"]},
-  insuf:{p:["{P} traverse un trimestre très difficile", "{P} obtient des résultats insuffisants"], n:["Trimestre très difficile", "Des résultats insuffisants ce trimestre"]}
-};
-const CLAUSE = {
-  bon:{hausse:[", avec des résultats en nette progression au fil des devoirs", ", porté par une belle progression au fil des devoirs"],
-       hausse_prev:[", en nette progression par rapport au trimestre précédent"],
-       baisse:[", même si les notes fléchissent en fin de trimestre"], baisse_prev:[", même si les résultats sont en recul par rapport au trimestre précédent"],
-       irregulier:[", malgré des résultats irréguliers d'un devoir à l'autre"],
-       dernier_haut:[", conclu par un dernier devoir particulièrement réussi"], dernier_bas:[", même si le dernier devoir est en deçà"],
-       regulier:[", avec des résultats d'une belle régularité"]},
-  faible:{hausse:[", avec une progression encourageante au fil des devoirs", ", même si les notes progressent nettement au fil des devoirs"],
-       hausse_prev:[", en progrès par rapport au trimestre précédent"],
-       baisse:[", avec des notes en baisse en fin de trimestre"], baisse_prev:[", en recul par rapport au trimestre précédent"],
-       irregulier:[", avec des résultats très irréguliers"],
-       dernier_haut:[", même si le dernier devoir, plus réussi, est encourageant"], dernier_bas:[", avec un dernier devoir décevant"], regulier:[]}
-};
-// Rassemble les critères de travail et d'attitude retenus, sous forme grammaticale
-function criteres(tags, g, lim){
-  const T = ids => ids.filter(i => tags.has(i));
-  const posC = T(["applique","autonome","volontaire"]).slice(0, lim), posM = T(["maison_ok","lecons_ok"]);
-  const wNeg = T(["maison_non","maison_irreg","lecons","minimum","methode","lent","materiel"]).slice(0, Math.max(2, lim));
-  const aPos = T(["exemplaire","serieux","agreable","concentre"]).slice(0, lim), oral = tags.has("participe");
-  const aNeg = T(["dissipe","bavard","distrait","passif","timide","particip_insuf"]).slice(0, Math.max(2, lim));
-  return {posC, posM, wNeg, aPos, oral, aNeg,
-    adjW: g(listeFr(posC.map(i => FORMES[i].adj))), adjA: g(listeFr(aPos.map(i => FORMES[i].adj))),
-    clauseM: posM.length === 2 ? "le travail personnel est régulier et les leçons sont bien apprises" : posM.length ? FORMES[posM[0]].clause : "",
-    nomsM: listeFr(posM.map(i => FORMES[i].nom)),
-    clauseH: posM.length === 2 ? "le travail est régulier et les leçons sont bien apprises" : tags.has("maison_ok") ? "le travail est fait avec régularité" : "les leçons sont bien apprises"};
-}
-const vpsDe = (l, g) => g(listeFr(l.map(i => FORMES[i].vp)));
-function verbeAtt(aNeg, adv, ferme){
-  const fort = aNeg.some(i => FORMES[i].fort);
-  return fort ? `doit${adv ? " " + adv : ""}${ferme ? " impérativement" : ""}` : `gagnerait${adv ? " " + adv : ""} à`;
-}
-const verbeTrav = (adv, ferme) => `doit${adv ? " " + adv : ""}${ferme ? " impérativement" : ""}`;
-// Rédige travail + attitude en 1 à 3 phrases liées
-function phrasesComportement(tags, g, r, lim, ferme){
-  const k = criteres(tags, g, lim), out = [];
-  const wPos = k.posC.length || k.posM.length, aPos = k.aPos.length || k.oral;
-  const oralTxt = () => pick(["participe volontiers et avec pertinence à l'oral", "enrichit le cours par sa participation"], r);
-  let travFait = false, attFait = false;
-  // A. Qualités (attitude et/ou travail en classe) + attitude à améliorer → une phrase
-  if ((k.posC.length || aPos) && !k.posM.length && !k.wNeg.length && k.aNeg.length){
-    const adjs = [...k.aPos, ...k.posC].slice(0, 3).map(i => g(FORMES[i].adj));
-    let sujet = listeFr(adjs) + (k.posC.length ? " en classe" : "");
-    if (k.oral) sujet = adjs.length ? listeFr(adjs) + g(", {investi|investie} à l'oral") : g("{Investi|Investie} à l'oral");
-    out.push({t:g(`${cap(sujet)}, {il|elle} ${verbeAtt(k.aNeg, "toutefois", ferme)} ${vpsDe(k.aNeg, g)}.`), v:0}); travFait = attFait = true;
-  }
-  // E. Rien de positif, peu de points à améliorer → une seule phrase d'objectifs
-  else if (!wPos && !aPos && k.wNeg.length && k.aNeg.length && k.wNeg.length + k.aNeg.length <= 3 && !(tags.has("maison_non") && tags.has("minimum"))){
-    const fort = ferme || [...k.wNeg, ...k.aNeg].some(i => FORMES[i].fort);
-    out.push({t:g(pick([`Pour progresser, {il|elle} ${fort && ferme ? "doit impérativement" : "doit"} ${vpsDe([...k.wNeg, ...k.aNeg], g)}.`, `{Il|Elle} doit désormais ${vpsDe([...k.wNeg, ...k.aNeg], g)}.`], r)), v:-1}); travFait = attFait = true;
-  }
-  // B. Attitude positive + travail seulement à améliorer → une phrase
-  else if (k.aPos.length && !k.aNeg.length && k.wNeg.length && !wPos){
-    out.push({t:g(`Élève ${k.adjA}${k.oral ? ` qui ${oralTxt()}` : ""}, {il|elle} ${verbeTrav("cependant", ferme)} ${vpsDe(k.wNeg, g)}.`), v:0}); travFait = attFait = true;
-  }
-  // C. Tout est positif → une phrase (deux si beaucoup d'éléments)
-  else if (k.aPos.length && k.posC.length && !k.wNeg.length && !k.aNeg.length){
-    let s = `Élève ${k.adjA}, {il|elle} se montre ${k.adjW} en classe`;
-    if (k.oral) s += / et /.test(k.adjW) ? " et enrichit le cours par sa participation" : ` et ${oralTxt()}`;
-    else if (k.posM.length) s += `, et ${k.clauseM}`;
-    out.push({t:g(s + "."), v:1});
-    if (k.oral && k.posM.length) out.push({t:g(`À la maison, ${k.clauseH}.`), v:1});
-    travFait = attFait = true;
-  }
-  if (!travFait && (wPos || k.wNeg.length)){
-    let s, v;
-    if (!k.wNeg.length){
-      v = 1;
-      if (k.posC.length && k.posM.length) s = pick([`{Il|Elle} se montre ${k.adjW} en classe, et ${k.clauseM}.`, `${cap(k.adjW)} en classe, {il|elle} s'appuie aussi sur ${k.nomsM}.`], r);
-      else if (k.posC.length) s = pick([`{Il|Elle} se montre ${k.adjW} en classe.`, `En classe, {il|elle} se montre ${k.adjW}.`], r);
-      else s = cap(k.clauseM) + ".";
-    } else if (!wPos){
-      v = -1;
-      if (tags.has("maison_non") && tags.has("minimum")){
-        const autres = k.wNeg.filter(i => i !== "maison_non" && i !== "minimum");
-        s = `Le travail est insuffisant, en classe comme à la maison : {il|elle} ${verbeTrav("", ferme)} ${autres.length ? vpsDe(autres, g) : "se remettre au travail sans attendre"}.`;
-      } else s = pick([`Pour progresser, {il|elle} ${verbeTrav("", ferme)} ${vpsDe(k.wNeg, g)}.`, `{Il|Elle} ${verbeTrav("désormais", ferme)} ${vpsDe(k.wNeg, g)}.`], r);
-    } else {
-      v = 0;
-      s = k.posC.length ? `${cap(k.adjW)} en classe, {il|elle} ${verbeTrav("cependant", ferme)} ${vpsDe(k.wNeg, g)}.` : `Si ${k.clauseM}, {il|elle} ${verbeTrav("", ferme)} ${vpsDe(k.wNeg, g)}.`;
-    }
-    out.push({t:g(s), v});
-  }
-  if (!attFait && (aPos || k.aNeg.length)){
-    let s, v;
-    if (!k.aNeg.length){
-      v = 1;
-      s = k.aPos.length ? `Élève ${k.adjA}, {il|elle} ${k.oral ? oralTxt() : pick(["contribue à une ambiance de travail sereine", "travaille dans un excellent état d'esprit"], r)}.` : pick(["{Il|Elle} participe volontiers et avec pertinence à l'oral.", "Sa participation orale, régulière et pertinente, enrichit le cours."], r);
-    } else if (!aPos){
-      v = -1;
-      const nps = k.aNeg.filter(i => FORMES[i].np), seuls = k.aNeg.filter(i => !FORMES[i].np);
-      if (nps.length){
-        const pl = nps.length > 1 || FORMES[nps[0]].pl;
-        s = `${cap(listeFr(nps.map(i => FORMES[i].np)))} ${pick(pl ? ["freinent ses progrès", "pénalisent son travail"] : ["freine ses progrès", "pénalise son travail"], r)}`;
-        if (seuls.length) s += ` et {il|elle} ${verbeAtt(seuls, "", ferme)} ${vpsDe(seuls, g)}`;
-        s += ".";
-      } else s = `{Il|Elle} ${verbeAtt(k.aNeg, "", ferme)} ${vpsDe(k.aNeg, g)}.`;
-    } else {
-      v = 0;
-      const sujet = k.aPos.length ? cap(k.adjA) : "{Impliqué|Impliquée} à l'oral";
-      s = `${sujet}, {il|elle} ${verbeAtt(k.aNeg, "toutefois", ferme)} ${vpsDe(k.aNeg, g)}.`;
-    }
-    out.push({t:g(s), v});
-  }
-  if (tags.has("insolent")) out.push({t:ferme ? "Le comportement est inacceptable : un changement immédiat est exigé." : "Le comportement en classe n'est pas acceptable et doit évoluer rapidement.", v:-1, p:9});
-  return out;
-}
-
-function generer(e, c, me){
-  const cfg = S.cfg, F = e.sexe === "F", g = t => genre(t, F), ferme = cfg.ton === "ferme";
+function generer(e, c, me, usage){
+  const cfg = S.cfg, Fem = e.sexe === "F", g = t => genre(t, Fem), ferme = cfg.ton === "ferme", doux = cfg.ton === "bienveillant";
   const tags = effTags(e, c, me);
-  const a = analyse(e, c, me);
-  const niv = niveau(e.moy), td = tendance(e);
+  const niv = niveau(e.moy), td = tendance(e), m = e.moy;
   const pre = (e.prenom || "").trim().split(/\s+/)[0] || "";
   const modeP = pre && pre !== "Prénom" ? (cfg.prenom || "non") : "non";
-  const limBase = {courte:1, standard:3, developpee:5}[cfg.longueur] || 3;
+  const tu = cfg.concl !== "neutre";
+  const limBase = {courte:1, standard:2, developpee:3}[cfg.longueur] || 2;
+  const NX = prochain(c);
+  const U0 = usage || usageClasse(c, e);
+  const Fx = niv ? faits(e, c, me) : null;
 
   const rediger = lim => {
-    const r = rng(e.seed), it = [];
-    // 1. Ouverture : niveau + évolution (ou détail marquant) dans la même phrase
-    if (niv){
-      const bon = ["exc","tb","bien"].includes(niv);
-      const base = (modeP === "debut" || modeP === "deux") ? pick(OUV[niv].p, r).replace("{P}", pre) : pick(OUV[niv].n, r);
-      let k = null;
-      if (td.t === "hausse") k = td.src === "prev" ? "hausse_prev" : "hausse";
-      else if (td.t === "baisse") k = td.src === "prev" ? "baisse_prev" : "baisse";
-      else if (td.t === "irregulier") k = "irregulier";
-      else {
-        const n = e.notes || [], last = n[n.length - 1];
-        if (n.length >= 3 && e.moy != null){
-          if (last >= Math.max(14, e.moy + 3)) k = "dernier_haut";
-          else if (last <= e.moy - 4) k = "dernier_bas";
-          else if (bon && e.moy >= 14 && std(n) < 1.5) k = "regulier";
-        }
+    const r = rng(e.seed), U = new Map(U0), it = [];
+    // choisit, parmi les formulations possibles, l'une des moins utilisées dans la classe
+    const ch = (ids, nom, arr) => {
+      const c2 = arr.map((t, i) => [nom + "." + i, t]).filter(x => x[1]);
+      if (!c2.length) return null;
+      const min = Math.min(...c2.map(([id]) => U.get(id) || 0));
+      const pool = c2.filter(([id]) => (U.get(id) || 0) <= min);
+      const [id, t] = pool[Math.floor(r() * pool.length)];
+      U.set(id, (U.get(id) || 0) + 1); ids.push(id); return t;
+    };
+    if (!niv){
+      it.push({t:"{s} n'a pas pu être {évalué|évaluée} ce trimestre.", p:99, v:0, ids:[], sec:"res"});
+      if (e.remarque && e.remarque.trim()){ let s = e.remarque.trim(); if (!/[.!?…]$/.test(s)) s += "."; it.push({t:cap(s), p:9, v:0, ids:[], sec:"rem"}); }
+      return it;
+    }
+    const bon = niv === "exc" || niv === "satisf";
+    const has = id => tags.has(id);
+    const a = Fx.a;
+    const forts = DOMAINES.filter(d => has("f_" + d.id)), diffs = DOMAINES.filter(d => has("d_" + d.id)).slice(0, 2);
+    const best = Fx.best && !(Fx.best.ev.dom && diffs.some(d => d.id === Fx.best.ev.dom)) ? Fx.best : null;
+    const qual = Object.keys(QUALITE).filter(has).slice(0, Math.min(lim, 2));
+    const planIds = [], plan = ch(planIds, "plan", ["classique", "classique", best || forts.length ? "fusion" : null, (best || forts.length || qual.length) && niv !== "exc" ? "preuve" : null]);
+    
+    // ---- 1. Bilan : niveau (barème) + ce que disent les notes
+    {
+      const ids = [...planIds];
+      const adv = niv === "insuf" && m < 7 ? "nettement " : niv === "satisf" && m >= 15 ? "tout à fait " : "";
+      const avecS = modeP === "debut" || modeP === "deux";
+      const base = ch(ids, "bil." + niv, BILAN[niv].map(b => avecS && !b[0].includes("{s}") ? null : b));
+      const pl = base[1];
+      let t = cap(base[0].replace("{A}", adv));
+      const n = e.notes || [], last = n[n.length - 1];
+      const k = [];
+      if (td.t === "hausse") k.push(td.src === "prev" ? "hausse_prev" : "hausse");
+      if (bon && n.length >= 3 && std(n) < 1.5 && td.t === "stable") k.push("regulier");
+      if (bon && Fx.top.length >= 2) k.push("top");
+      if (bon && Fx.ecart != null && Fx.ecart >= 3) k.push("au_dessus");
+      if (n.length >= 3 && last >= Math.max(14, m + 3) && td.t !== "hausse") k.push("dernier_haut");
+      const banque = BILAN_PLUS[bon ? "bon" : niv];
+      const dispo = k.filter(x => banque[x]);
+      let fus = null;
+      if (plan === "fusion"){
+        if (best) fus = ch(ids, "fus.e", [
+          bon && best.v >= 15 ? `, avec notamment une très belle copie ${best.lib.a}` : null,
+          `, avec notamment une belle réussite ${best.lib.a}`,
+          niv === "insuf" ? `, malgré une réussite encourageante ${best.lib.a}` : null]);
+        else if (forts.length) fus = ch(ids, "fus.d", [bon ? `, avec notamment de très bons résultats ${forts[0].p}` : null, `, avec une réelle aisance ${forts[0].p}`,
+          niv === "insuf" ? `, malgré de bons résultats ${forts[0].p}` : null]);
       }
-      const cl = k && CLAUSE[bon ? "bon" : "faible"][k] || [];
-      it.push({t:base + (cl.length ? pick(cl, r) : "") + ".", p:10, v:bon ? 1 : niv === "moyen" ? 0 : -1, sec:"res"});
-    } else {
-      it.push({t:g(modeP !== "non" ? `${pre} n'a pas pu être {évalué|évaluée} ce trimestre.` : "{Il|Elle} n'a pas pu être {évalué|évaluée} ce trimestre."), p:99, v:0, sec:"res"});
+      if (fus) t += fus;
+      else if (dispo.length){ const kk = dispo[Math.floor(r() * dispo.length)]; t += ch(ids, "bp." + kk, banque[kk]).replace("{x}", pl ? "s" : ""); }
+      else if (niv === "correct" && m < 11.5 && /corrects?$/.test(t)) t += ch(ids, "nu", [accord(pl, " mais encore fragile", " mais encore fragiles"), accord(pl, " mais perfectible", " mais perfectibles")]);
+      it.push({t:t + ".", p:10, v:bon ? 1 : niv === "correct" ? 0 : -1, ids, sec:"res", conn:0});
     }
-    // 2. Chapitres, avec comparaison à la classe quand elle est parlante
-    const forts = DOMAINES.filter(d => tags.has("f_" + d.id)).slice(0, 2), diffs = DOMAINES.filter(d => tags.has("d_" + d.id)).slice(0, 2);
-    const P = l => listeFr(l.map(d => d.p)), N = l => listeFr(l.map(d => d.n));
-    if (forts.length && diffs.length) it.push({t:g(pick([
-        `{Il|Elle} est à l'aise ${P(forts)}, mais doit encore retravailler ${N(diffs)}.`,
-        `Les acquis sont solides ${P(forts)}, plus fragiles ${P(diffs)}.`,
-        `Si {il|elle} réussit bien ${P(forts)}, {il|elle} doit encore consolider ${N(diffs)}.`], r)), p:8, v:0, sec:"math"});
-    else if (forts.length){
-      const d = forts.length === 1 && a.doms.find(x => x.id === forts[0].id);
-      const plus = d && d.cm != null && d.md - d.cm >= 4 ? ", bien au-dessus de la moyenne de la classe" : "";
-      it.push({t:g(pick([`{Il|Elle} se distingue particulièrement ${P(forts)}${plus}.`, `{Il|Elle} est particulièrement à l'aise ${P(forts)}${plus}.`], r)), p:8, v:1, pivot:1, sec:"math"});
+
+    // ---- 2. Points forts (chapitre, devoir précis, qualités)
+    const enFin = plan === "preuve";
+    const fortsIt = [];
+    if (plan !== "fusion" || (!best && !forts.length)){
+      const ids = [];
+      let t = null;
+      if (best){
+        const L = best.lib, ag = (mm, ff) => L.f ? ff : mm;
+        const topTxt = Fx.premier === "seul" ? ", la meilleure de la classe" : Fx.premier === "ex" || (best.n >= 8 && best.rang <= 3 && best.v >= 14) ? ", l'une des meilleures de la classe" : "";
+        const topN = topTxt ? topTxt.replace("la meilleure", "avec la meilleure note").replace("l'une des meilleures", "avec l'une des meilleures notes") : "";
+        t = enFin ? ch(ids, "fp.e", [
+          `${cap(L.t)}, bien ${ag("réussi", "réussie")}, montre que c'est à sa portée.`,
+          `Sa réussite ${L.a} prouve qu'{il|elle} en a les moyens.`,
+          `La réussite ${L.a} montre de quoi {s} est capable.`])
+        : ch(ids, "f.e", [
+          best.v >= 15 ? `Très belle copie ${L.a}${topTxt}.` : null,
+          `{s} s'est notamment {distingué|distinguée} ${L.a}${topN}.`,
+          `J'ai particulièrement apprécié sa copie ${L.a}.`,
+          best.v >= 15 ? `${cap(L.t)}, ${ag("particulièrement réussi", "particulièrement réussie")}, témoigne d'une vraie maîtrise des méthodes.` : null,
+          !bon ? `La réussite ${L.a} montre de quoi {s} est capable.` : null,
+          !bon ? `${cap(L.t)} est une réussite encourageante.` : null]);
+      } else if (forts.length){
+        const D = forts[0], pl = /^les /.test(D.n);
+        t = enFin ? ch(ids, "fp.d", [`Sa réelle aisance ${D.p} montre que c'est à sa portée.`, `Ses bons résultats ${D.p} prouvent qu'{il|elle} en a les moyens.`])
+        : ch(ids, "f.d", [`{s} est particulièrement à l'aise ${D.p}.`, `${cap(D.n)} ${accord(pl, "est un vrai point fort", "sont un vrai point fort")}.`, `Les résultats ${D.p} sont particulièrement solides.`]);
+      }
+      if (t) fortsIt.push({t, p:8, v:1, ids, sec:"fort", conn:/^(Très belle|J'ai)/.test(t) ? 0 : 1});
     }
-    else if (diffs.length) it.push({t:g(pick([`Des fragilités demeurent ${P(diffs)}, qu'il faudra reprendre.`, `${cap(N(diffs))} ${diffs.length > 1 || /^les /.test(diffs[0].n) ? "restent" : "reste"} à consolider.`], r)), p:8, v:-1, sec:"math"});
-    // 3. Travail (classe + maison) et attitude, rédigés ensemble
-    phrasesComportement(tags, g, r, lim, ferme).forEach(x => it.push({p:6, pivot:x.v === 1 ? 1 : 0, ...x, sec:"comp"}));
-    if (e.remarque && e.remarque.trim()){ let s = e.remarque.trim(); if (!/[.!?…]$/.test(s)) s += "."; it.push({t:cap(s), p:9, v:0, sec:"rem"}); }
-    // 5. Conclusion
-    if (niv){
-      let cc = g(pick(conclusion(e, c, niv, td, tags, r, diffs.length > 0), r));
-      if ((modeP === "fin" || modeP === "deux") && cfg.concl !== "neutre" && /\b(continue|poursuis|persévère|reste|reprends|accroche-toi|relâche|décourage|retravaillant)\b/i.test(cc))
-        cc = cc.replace(/\s*([!.])\s*$/, (_, ponct) => `, ${pre}${ponct === "!" ? " !" : "."}`);
-      it.push({t:cc, p:99, v:0, sec:"concl"});
+    if (qual.length){
+      const ids = [], L = listeFr(qual.map(i => QUALITE[i])), pl = qual.length > 1;
+      const t = enFin && !fortsIt.length ? ch(ids, "qp", [`{s} peut pour cela s'appuyer sur ${L}.`, `${cap(L)} ${accord(pl, "sera un précieux atout", "seront de précieux atouts")}.`])
+        : ch(ids, "q", [`${cap(L)} ${accord(pl, "est un vrai atout", "sont de vrais atouts")}.`, `On apprécie ${L}.`, `Je salue ${L}.`, `{s} peut s'appuyer sur ${L}.`, `J'apprécie ${L}.`]);
+      fortsIt.push({t, p:6, v:1, ids, sec:"fort", conn:/^(On|Je|J')/.test(t) ? 0 : 1});
     }
-    return it;
+
+    // ---- 3. Ce qui ne va pas, avec le conseil qui y répond
+    const cand = []; // {cl (proposition), k (clé du conseil), ids}
+    const add = (nom, arr, k, extra) => { const ids = []; const cl = ch(ids, nom, arr); if (cl) cand.push({cl, k, ids, ...extra}); };
+    // un comportement dissipé passe en premier : la conclusion y fait référence
+    if (has("dissipe")) add("w.dissipe", DEFAUT.dissipe, "dissipe");
+    if (diffs.length === 2) add("w.d2", [`des lacunes persistent ${listeFr(diffs.map(d => d.p))}`, `${diffs[0].n} et ${diffs[1].n} restent des sources de difficulté`], "dom:" + diffs[0].id, {k2:"dom:" + diffs[1].id});
+    else if (diffs.length === 1){
+      const D = diffs[0], pl = /^les /.test(D.n), dm = a.doms.find(x => x.id === D.id);
+      const Wv = Fx.worst && Fx.worst.ev.dom === D.id ? Fx.worst : null;
+      add("w.d1", [`${D.n} ${accord(pl, "reste", "restent")} une source de difficulté`, `des lacunes persistent ${D.p}`,
+        Wv ? `${Wv.lib.t} a mis en évidence des notions encore mal assimilées` : null,
+        Wv && Wv.v <= m - 3 ? `${Wv.lib.t}, nettement en deçà de ses autres résultats, montre que ces notions restent à consolider` : null,
+        dm && dm.cm != null && dm.cm - dm.md >= 3 ? `les résultats ${D.p} sont nettement en dessous de ceux de la classe` : null], "dom:" + D.id);
+    } else if (Fx.worst && Fx.worst.ev.dom && DE[Fx.worst.ev.dom] && !bon)
+      add("w.w", [`${Fx.worst.lib.t} a mis en évidence des notions encore mal assimilées`, `${Fx.worst.lib.t} montre que certaines notions restent à consolider`], "dom:" + Fx.worst.ev.dom);
+    if (has("bavard")) add("w.bavard", DEFAUT.bavard, "bavard");
+    if (Fx.dm_sup) add("w.dm_sup", DEFAUT.dm_sup, "dm_sup");
+    if (has("maison_non")) add("w.mn", e.nr >= 2 ? [`${LETTRES[e.nr] || String(e.nr)} devoirs n'ont pas été rendus, ce qui pénalise lourdement la moyenne`, `trop de travaux n'ont pas été rendus ce trimestre`] : DEFAUT.maison_non, "maison");
+    if (has("lecons")) add("w.lec", a.sugg.includes("lecons") ? DEFAUT.lecons_data : DEFAUT.lecons, "lecons");
+    if (has("minimum")) add("w.minimum", DEFAUT.minimum, "minimum");
+    if (has("maison_irreg")) add("w.mi", e.nr === 1 ? ["un devoir n'a pas été rendu", "un travail demandé n'a pas été rendu"] : DEFAUT.maison_irreg, "maison");
+    if (td.t === "baisse") add("w.baisse", td.src === "prev" ? DEFAUT.baisse_prev : DEFAUT.baisse, "baisse");
+    if (td.t === "irregulier") add("w.irr", DEFAUT.irregulier, "irregulier");
+    ["methode", "distrait", "passif", "lent", "timide", "particip_insuf", "materiel"].forEach(id => { if (has(id)) add("w." + id, DEFAUT[id], id); });
+    if (Fx.ctrl_sup) add("w.ctrl_sup", DEFAUT.ctrl_sup, "ctrl_sup");
+    if (td.t !== "baisse" && (e.notes || []).length >= 3 && e.notes[e.notes.length - 1] <= m - 4) add("w.dernier", DEFAUT.dernier_bas, "baisse");
+    if (!bon && Fx.ecart != null && Fx.ecart <= -2) add("w.sc", DEFAUT.sous_classe, null);
+    // rien de précis : marge de progression sur le chapitre le moins réussi
+    let neutre = null;
+    if (!cand.length){
+      const bas = a.doms.filter(d => d.id !== "_" && DE[d.id] && d.md <= m - 1.5).sort((p, q) => p.md - q.md)[0];
+      if (bas && !forts.some(d => d.id === bas.id)) add("w.marge", [`la principale marge de progression se situe ${DOM[bas.id].p}`, `les résultats ${DOM[bas.id].p} sont un peu en retrait`], "dom:" + bas.id, {doux:1});
+      else neutre = ch([], "w.n." + niv, {
+        exc:["Il reste à tenir ce niveau sur toute l'année.", "Seul enjeu à présent : maintenir ce cap jusqu'à la fin de l'année."],
+        satisf:["Il reste maintenant à franchir le cap de l'excellence.", "Le palier suivant, l'excellence, est désormais à portée."],
+        correct:["Les acquis restent toutefois à consolider pour gagner en assurance.", "Les bases sont là, mais elles demandent encore à être consolidées."],
+        insuf:["Les bases ne sont pas encore suffisamment solides.", "Les notions essentielles ne sont pas encore acquises."]}[niv]);
+    }
+    const nW = Math.min(cand.length, lim === 1 ? 1 : lim === 2 ? 2 : 3);
+    const W = cand.slice(0, nW);
+    const faibles = [];
+    const insertGroupe = (grp, idx) => {
+      const ids = grp.flatMap(x => x.ids);
+      const [c1, c2] = grp.map(x => x.cl);
+      let t, conn = 1;
+      if (grp.length === 1){
+        t = ch(ids, "wf1" + (idx ? "b" : ""), idx ? [`${c1}.`, `De plus, ${c1}.`, `Par ailleurs, ${c1}.`, `Enfin, ${c1}.`] : [
+          `${c1}.`, `${c1}.`, `Point de vigilance : ${c1}.`, grp[0].doux ? null : `Principal point faible : ${c1}.`,
+          bon && !grp[0].doux ? `Seule ombre au tableau : ${c1}.` : null, niv === "insuf" ? `Je constate que ${c1}.` : null]);
+      } else {
+        t = ch(ids, "wf2", [`${c1}, et ${c2}.`, `Deux points freinent encore ses progrès : ${c1}, et ${c2}.`, `${c1} ; de plus, ${c2}.`,
+          `Points de vigilance : ${c1} ; ${c2}.`, `${c1}. Par ailleurs, ${c2}.`, bon ? `Deux ombres au tableau : ${c1}, et ${c2}.` : null]);
+      }
+      if (idx || /^[A-ZÀ-Ý]/.test(t)) conn = 0;
+      faibles.push({t, p:idx ? 5 : 9, v:-1, ids, sec:"faible", conn});
+    };
+    if (W.length === 3){ insertGroupe(W.slice(0, 2), 0); insertGroupe(W.slice(2), 1); }
+    else if (W.length) insertGroupe(W, 0);
+    if (neutre) faibles.push({t:neutre, p:7, v:0, ids:[], sec:"faible", conn:0});
+    if (has("insolent")) faibles.push({t:ch([], "ins", ferme ? ["Le comportement est inacceptable : un changement immédiat est exigé."] : ["Le comportement en classe n'est pas acceptable et doit évoluer rapidement.", "L'attitude envers les adultes doit impérativement devenir plus respectueuse."]), p:9, v:-1, ids:[], sec:"faible", conn:0});
+
+    // ---- 4. Conseils concrets pour la suite
+    const conseilsIt = [];
+    {
+      const keys = [];
+      W.forEach(x => { if (x.k) keys.push(x.k); if (x.k2) keys.push(x.k2); });
+      const nA = lim === 1 ? 1 : 2;
+      const pris = [], ids = [];
+      for (const k of keys){
+        if (pris.length >= nA) break;
+        const arr = k.startsWith("dom:") ? CONSEIL_DOM[k.slice(4)] : CONSEIL[k];
+        if (!arr) continue;
+        const t = ch(ids, "c." + k, arr); if (t && !pris.includes(t)) pris.push(t);
+      }
+      if (!pris.length || (lim >= 3 && pris.length < 2)){ const t = ch(ids, "c." + niv, CONSEIL[niv]); if (t && !pris.includes(t)) pris.push(t); }
+      const [a1, a2] = pris, dur = ferme && !bon;
+      let t;
+      if (!a2) t = ch(ids, "a1", [
+        `{POUR}, l'objectif sera ${deInf(a1)}.`, `{AU}, {s} devra ${dur ? "impérativement " : ""}${a1}.`, `Mon conseil pour la suite : ${a1}.`,
+        `La priorité, désormais : ${a1}.`, doux ? `Je l'encourage à ${a1}.` : `Je lui conseille ${deInf(a1)}.`, `Pour progresser, {s} gagnera à ${a1}.`,
+        dur ? `Il est indispensable ${deInf(a1)}.` : `Il s'agira désormais ${deInf(a1)}.`]);
+      else t = ch(ids, "a2", [
+        `{POUR}, deux objectifs : ${a1}, et ${a2}.`, `{AU}, {s} devra ${dur ? "impérativement " : ""}${a1}, mais aussi ${a2}.`,
+        doux ? `Je l'encourage à ${a1}, et à ${a2}.` : `Je lui conseille ${deInf(a1)}, et ${deInf(a2)}.`, `Pour progresser, {s} gagnera à ${a1}, et à ${a2}.`,
+        `Mes conseils pour la suite : ${a1}, puis ${a2}.`, `Il s'agira désormais ${deInf(a1)}, ainsi que ${deInf(a2)}.`]);
+      conseilsIt.push({t, p:9, v:0, ids, sec:"conseil", conn:0});
+    }
+
+    // ---- 5. Remarque libre du professeur
+    const remIt = [];
+    if (e.remarque && e.remarque.trim()){ let s = e.remarque.trim(); if (!/[.!?…]$/.test(s)) s += "."; remIt.push({t:cap(s), p:9, v:0, ids:[], sec:"rem", conn:0}); }
+
+    // ---- 6. Conclusion
+    const negComp = ["bavard", "dissipe", "insolent", "distrait", "passif"].some(has), negTrav = ["maison_non", "maison_irreg", "lecons", "minimum"].some(has);
+    const grave = has("insolent") || has("dissipe") || (ferme && negComp && !bon);
+    const effort = ["serieux", "volontaire", "maison_ok", "lecons_ok", "applique"].some(has);
+    let k;
+    if (niv === "exc") k = negComp ? "exc_comp" : negTrav ? "exc_trav" : td.t === "baisse" ? "baisse" : "exc";
+    else if (niv === "satisf") k = grave ? "ferme" : td.t === "baisse" ? "baisse" : negComp || negTrav ? "satisf_neg" : td.t === "hausse" ? "progres" : "satisf";
+    else if (niv === "correct") k = grave ? "ferme" : td.t === "hausse" ? "progres" : negTrav ? "travail" : effort ? "perseverer" : "correct";
+    else k = grave ? "ferme" : td.t === "hausse" ? "progres" : effort ? "perseverer" : negTrav ? "travail" : "insuf";
+    if (c && c.niveau === "3e" && !bon && k !== "ferme" && r() < .35) k = "brevet";
+    const kIds = [];
+    const fin = ch(kIds, "fin." + k + "." + (tu ? "tu" : "n"), FIN[k][tu ? "tu" : "neutre"]);
+    const finIt = {t:fin, p:99, v:0, ids:kIds, sec:"concl", conn:0};
+
+    // ---- Assemblage selon le plan
+    it.push(...(enFin ? [...faibles, ...conseilsIt, ...fortsIt] : [...fortsIt, ...faibles, ...conseilsIt]), ...remIt, finIt);
+    return {it, ch};
   };
-  const build = list => {
-    const rr = rng(e.seed + 7), dispo = [...(CONNECT[cfg.ton] || CONNECT.neutre)];
-    let prev = null, dePlus = false, neanmoins = false;
-    const out = list.map(x => {
+
+  const VOC = tu && (modeP === "fin" || modeP === "deux") ? ", " + pre : "";
+  const build = (list, ch) => {
+    let prev = null;
+    const morceaux = list.map(x => {
       let s = x.t;
-      if (prev){
-        const debutLibre = !/^(Si |S'|Pour |En classe|Toutefois|Cependant)/.test(s);
-        if (x.v === -1 && prev.v === 1 && dispo.length && debutLibre) s = dispo.splice(Math.floor(rr() * dispo.length), 1)[0] + low(s);
-        else if (x.v === -1 && prev.v === -1 && prev.sec !== "res" && !dePlus && debutLibre && rr() < .6){ s = "De plus, " + low(s); dePlus = true; }
-        else if (x.pivot && prev.v === -1 && !neanmoins && debutLibre){ s = "Néanmoins, " + low(s); neanmoins = true; }
+      x.kids = [];
+      if (prev && x.conn){
+        if (x.v === -1 && prev.v >= 0) s = ch(x.kids, "k.contre", ["Cependant, ", "Toutefois, ", "En revanche, ", "Il faut cependant noter que ", "Pour autant, "]) + low(s);
+        else if (x.v === 1 && prev.v === -1) s = ch(x.kids, "k.pos", ["Néanmoins, "]) + low(s);
       }
-      prev = x; return s;
+      s = s.replace(/\{V\}/g, VOC).replace(/\{AU\}/g, NX.AU).replace(/\{POUR\}/g, NX.POUR).replace(/\{DES\}/g, NX.DES);
+      prev = x; return cap(s);
     });
-    let txt = out.join(" ").replace(/\bSi il/g, "S'il").replace(/\bsi il/g, "s'il").replace(/\b([Dd]e|[Qq]ue) ([aeéiou])/g, (m, a, b) => m);
+    let txt = morceaux.join(" "), premier = true;
+    // {s} : le prénom à la première occurrence (si demandé), puis il / elle, avec majuscule en début de phrase
+    txt = txt.replace(/\{s\}/g, (_, off) => {
+      const debut = off === 0 || /[.!?]\s*$/.test(txt.slice(0, off));
+      let w;
+      if (premier && (modeP === "debut" || modeP === "deux")) w = pre;
+      else w = Fem ? "elle" : "il";
+      premier = false;
+      return debut ? cap(w) : w;
+    });
+    txt = g(txt).replace(/\bSi il/g, "S'il").replace(/\bsi il/g, "s'il").replace(/\b([Qq]u|[Dd])e ([aeiouyéèêâîôAEIOUYÉÈÊÂÎÔ])/g, "$1'$2")
+      .replace(/([.!?]\s+)([a-zàâçéèêëîïôûù])/g, (_, p1, l) => p1 + l.toUpperCase()).replace(/\s+/g, " ").trim();
     if (c && String(c.periode).startsWith("S")) txt = txt.replace(/trimestre/g, "semestre");
     return txt;
   };
   const max = +cfg.max || 0;
-  // trop long : d'abord moins d'adjectifs, puis on retire les phrases les moins importantes
-  let lim = limBase, list = rediger(lim).map((x, i) => ({...x, i})), txt = build(list);
-  while (max && txt.length > max && lim > 1){ lim--; list = rediger(lim).map((x, i) => ({...x, i})); txt = build(list); }
+  const essai = lim => { const {it, ch} = rediger(lim); const list = it.map((x, i) => ({...x, i})); return {list, ch, txt:build(list, ch)}; };
+  // trop long : d'abord moins d'éléments par partie, puis on retire les phrases les moins importantes
+  let lim = limBase, R = essai(lim);
+  while (max && R.txt.length > max && lim > 1){ lim--; R = essai(lim); }
+  let list = R.list, txt = R.txt;
   while (max && txt.length > max && list.length > 2){
     let w = null;
     list.forEach(x => { if (x.sec === "concl") return; if (!w || x.p < w.p || (x.p === w.p && x.i > w.i)) w = x; });
     if (!w) break;
-    list = list.filter(x => x !== w); txt = build(list);
+    list = list.filter(x => x !== w); txt = build(list, R.ch);
   }
+  e.sig = list.flatMap(x => [...x.ids, ...(x.kids || [])]);
   return txt;
 }
-function maj(e, me){ if (!e.verrou) e.texte = generer(e, classe(), me); sauver(); }
-function majTous(c){ const me = moyEvals(c); c.eleves.forEach(x => { if (!x.verrou) x.texte = generer(x, c, me); }); if (!c.cl.verrou) c.cl.texte = ""; sauver(); }
+// nouveau = true (bouton « Régénérer ») : on évite aussi les formulations de la version précédente
+function maj(e, me, nouveau){ if (!e.verrou){ const c = classe(); e.texte = generer(e, c, me, nouveau ? usageRegen(c, e) : null); } sauver(); }
+function majTous(c){
+  // les formulations déjà prises par les élèves précédents sont évitées, ainsi que l'ancienne version de chacun
+  const me = moyEvals(c), fait = new Set(), u = new Map();
+  const ajoute = (x, k) => (x.sig || []).forEach(id => u.set(id, (u.get(id) || 0) + k));
+  c.eleves.forEach(x => { if (x.verrou) ajoute(x, 1); });
+  c.eleves.forEach(x => {
+    if (x.verrou) return;
+    ajoute(x, 1000); const ancien = [...(x.sig || [])];
+    x.texte = generer(x, c, me, u);
+    ancien.forEach(id => u.set(id, u.get(id) - 1000)); ajoute(x, 1);
+  });
+  if (!c.cl.verrou) c.cl.texte = ""; sauver();
+}
 
 /* ================= Appréciation de classe ================= */
 function stats(c){
@@ -996,9 +1161,9 @@ function mentionAuto(e, c, me){
   const negComp = negDe("comp"), negTrav = negDe("trav");
   const effort = ["serieux","volontaire","maison_ok","applique"].some(i => t.has(i));
   if (t.has("insolent") || t.has("dissipe")) return "Mise en garde comportement";
-  if ((niv === "fragile" || niv === "insuf") && negTrav) return "Mise en garde travail";
+  if (niv === "insuf" && negTrav) return "Mise en garde travail";
   if (niv === "exc" && !negComp && !negTrav) return "Félicitations";
-  if ((niv === "tb" || niv === "exc") && !negComp) return "Compliments";
+  if (niv === "satisf" && !negComp) return "Compliments";
   if (!negComp && !negTrav && (td === "hausse" || effort) && niv) return "Encouragements";
   return "—";
 }
@@ -1280,7 +1445,7 @@ document.addEventListener("click", async ev => {
     case "tag": if (!e) return; basculerTag(e, c, b.dataset.v); maj(e); renderEditeur(); renderListe(); break;
     case "evol": if (!e) return; e.evol = b.dataset.v; maj(e); renderEditeur(); break;
     case "sexe": if (!e) return; e.sexe = b.dataset.v; e.sexeDevine = false; maj(e); renderEditeur(); break;
-    case "regen": if (!e) return; e.seed = rnd(); e.verrou = false; maj(e); renderEditeur(); break;
+    case "regen": if (!e) return; e.seed = rnd(); e.verrou = false; maj(e, null, true); renderEditeur(); break;
     case "unlock": if (!e) return; e.verrou = false; maj(e); renderEditeur(); break;
     case "prev": aller(-1); break;
     case "copy": if (e) copierEleve(e, false); break;
